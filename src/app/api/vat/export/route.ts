@@ -12,7 +12,7 @@ export async function GET() {
   const filename = `concept-btw-overzicht-${exportData.period.label.toLowerCase().replace(/\s+/g, "-")}.pdf`;
   const pdf = generateVatPdf(exportData);
 
-  return new Response(pdf, {
+  return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${filename}"`,

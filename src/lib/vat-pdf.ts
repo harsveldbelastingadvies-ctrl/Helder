@@ -21,13 +21,16 @@ export function generateVatPdf(exportData: Awaited<ReturnType<typeof getVatExpor
         title: "Samenvatting",
         facts: [
           ["Ontvangen btw", euro(exportData.summary.receivedVatCents)],
+          ["Kosten exclusief btw", euro(exportData.summary.expenseExclTotalCents)],
           ["Betaalde btw", euro(exportData.summary.paidVatCents)],
           [exportData.summary.payableVatCents >= 0 ? "Te betalen" : "Terug te krijgen", euro(Math.abs(exportData.summary.payableVatCents))],
           ["Kosten inclusief btw", euro(exportData.summary.expenseTotalCents)],
+          ["Aantal kostenposten", String(exportData.summary.expenseCount)],
         ],
       },
       {
         title: "Verkoopfacturen",
+        lines: sales.length ? undefined : ["Geen verkoopfacturen in deze btw-periode."],
         table: {
           headers: ["Datum", "Factuur", "Klant", "Btw", "Excl.", "Btw-bedrag", "Incl."],
           rows: sales.map((row) => [
@@ -43,6 +46,7 @@ export function generateVatPdf(exportData: Awaited<ReturnType<typeof getVatExpor
       },
       {
         title: "Kosten",
+        lines: costs.length ? undefined : ["Geen kostenposten in deze btw-periode."],
         table: {
           headers: ["Datum", "Nummer", "Leverancier", "Btw", "Excl.", "Btw-bedrag", "Incl."],
           rows: costs.map((row) => [

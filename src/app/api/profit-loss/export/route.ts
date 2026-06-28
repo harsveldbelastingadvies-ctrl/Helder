@@ -12,7 +12,7 @@ export async function GET() {
   const filename = `concept-winst-en-verlies-${summary.year}.pdf`;
   const pdf = generateProfitLossPdf(summary);
 
-  return new Response(pdf, {
+  return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${filename}"`,

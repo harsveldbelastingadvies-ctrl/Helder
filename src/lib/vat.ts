@@ -17,6 +17,8 @@ export type VatSummary = {
   paidVatCents: number;
   payableVatCents: number;
   expenseTotalCents: number;
+  expenseExclTotalCents: number;
+  expenseCount: number;
 };
 
 type InvoiceVatRow = {
@@ -150,22 +152,25 @@ async function getExpenseRows(userId: string, period: VatPeriod) {
     .all(userId, period.start, period.end) as ExpenseVatRow[];
 }
 
-function summarize(period: VatPeriod, invoiceRows: InvoiceVatRow[], expenseRows: ExpenseVatRow[]): VatSummary {
+export function summarizeVatPeriod(period: VatPeriod, invoiceRows: InvoiceVatRow[], expenseRows: ExpenseVatRow[]): VatSummary {
   const receivedVatCents = invoiceRows.reduce((sum, line) => sum + Math.round(line.quantity * line.unitPriceCents * line.vatRate / 100), 0);
   const paidVatCents = expenseRows.reduce((sum, expense) => sum + calculateExpense(expense.amountInclCents, expense.vatRate).vatCents, 0);
   const expenseTotalCents = expenseRows.reduce((sum, expense) => sum + expense.amountInclCents, 0);
+  const expenseExclTotalCents = expenseRows.reduce((sum, expense) => sum + calculateExpense(expense.amountInclCents, expense.vatRate).amountExclCents, 0);
   return {
     period: period.label,
     receivedVatCents,
     paidVatCents,
     payableVatCents: receivedVatCents - paidVatCents,
     expenseTotalCents,
+    expenseExclTotalCents,
+    expenseCount: expenseRows.length,
   };
 }
 
 export async function getVatSummary(userId: string): Promise<VatSummary> {
   const period = currentQuarter();
-  return summarize(period, await getInvoiceRows(userId, period), await getExpenseRows(userId, period));
+  return summarizeVatPeriod(period, await getInvoiceRows(userId, period), await getExpenseRows(userId, period));
 }
 
 export async function getVatExport(userId: string) {
@@ -203,8 +208,7 @@ export async function getVatExport(userId: string) {
   });
   return {
     period,
-    summary: summarize(period, invoiceRows, expenseRows),
+    summary: summarizeVatPeriod(period, invoiceRows, expenseRows),
     rows: [...salesRows, ...costRows].sort((a, b) => a.date.localeCompare(b.date) || a.type.localeCompare(b.type, "nl")),
   };
 }
-

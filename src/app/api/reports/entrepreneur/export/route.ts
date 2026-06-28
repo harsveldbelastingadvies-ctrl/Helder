@@ -9,7 +9,7 @@ export async function GET() {
   if (!user) return Response.json({ error: "Niet ingelogd" }, { status: 401 });
   const report = await getEntrepreneurReport(user.id);
   const pdf = generateEntrepreneurReportPdf(report);
-  return new Response(pdf, {
+  return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="ondernemersrapport-${report.year}.pdf"`,

@@ -16,7 +16,7 @@ type InvoiceDraft = { customerId: string; issueDate: string; dueDate: string; li
 type CustomerInput = Pick<Customer, "name" | "contact" | "email" | "street" | "postalCode" | "city">;
 type Expense = { id: string; supplier: string; description: string; category: string; expenseDate: string; date: string; amountInclCents: number; amountExclCents: number; vatCents: number; vatRate: VatRate; depreciationYears: number; receiptName: string | null };
 type ExpenseInput = Pick<Expense, "supplier" | "description" | "category" | "expenseDate" | "amountInclCents" | "vatRate" | "depreciationYears"> & { receipt?: { name: string; mimeType: string; data: string }; removeReceipt?: boolean };
-type VatSummary = { period: string; receivedVatCents: number; paidVatCents: number; payableVatCents: number; expenseTotalCents: number };
+type VatSummary = { period: string; receivedVatCents: number; paidVatCents: number; payableVatCents: number; expenseTotalCents: number; expenseExclTotalCents: number; expenseCount: number };
 type ProfitLossSummary = { year: number; revenueCents: number; regularExpensesCents: number; depreciationCents: number; profitCents: number; investmentPurchasesCents: number; depreciationRows: Array<{ id: string; supplier: string; description: string; purchaseYear: number; depreciationYears: number; purchaseAmountExclCents: number; yearlyDepreciationCents: number; currentYearDepreciationCents: number; remainingYears: number }> };
 type CompanySettings = { companyName: string; owner: string; email: string; street: string; postalCode: string; city: string; kvkNumber: string; vatNumber: string; iban: string; invoicePaymentTerm: number; defaultVatRate: VatRate; invoiceFooter: string; invoiceLogo: string };
 type CrmNote = { id: string; body: string; createdAt: string };
@@ -93,7 +93,7 @@ export function AdministrationApp() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [vat, setVat] = useState<VatSummary>({ period: "Q2 2026", receivedVatCents: 0, paidVatCents: 0, payableVatCents: 0, expenseTotalCents: 0 });
+  const [vat, setVat] = useState<VatSummary>({ period: "Q2 2026", receivedVatCents: 0, paidVatCents: 0, payableVatCents: 0, expenseTotalCents: 0, expenseExclTotalCents: 0, expenseCount: 0 });
   const [profitLoss, setProfitLoss] = useState<ProfitLossSummary | null>(null);
   const [tasks, setTasks] = useState<DashboardTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,7 +169,7 @@ export function AdministrationApp() {
       loadPart<{ invoices: Invoice[] }>("/api/invoices", { invoices: [] }),
       loadPart<{ customers: Customer[] }>("/api/customers", { customers: [] }),
       loadPart<{ expenses: Expense[] }>("/api/expenses", { expenses: [] }),
-      loadPart<{ vat: VatSummary }>("/api/vat", { vat: { period: "Q2 2026", receivedVatCents: 0, paidVatCents: 0, payableVatCents: 0, expenseTotalCents: 0 } }),
+      loadPart<{ vat: VatSummary }>("/api/vat", { vat: { period: "Q2 2026", receivedVatCents: 0, paidVatCents: 0, payableVatCents: 0, expenseTotalCents: 0, expenseExclTotalCents: 0, expenseCount: 0 } }),
       loadPart<{ profitLoss: ProfitLossSummary | null }>("/api/profit-loss", { profitLoss: null }),
       loadPart<{ tasks: DashboardTask[] }>("/api/crm/tasks", { tasks: [] }),
       loadPart<{ settings: CompanySettings | null }>("/api/settings", { settings: null }),
@@ -1247,7 +1247,7 @@ function VatOverview({ vat }: { vat: VatSummary }) {
       <span className="vat-hero-amount">{resultAmount}</span>
     </section>
     <div className="notice"><span>i</span><p><strong>Controleer vóór je indient</strong>Dit is een concept op basis van je opgeslagen facturen en kosten. Conceptfacturen tellen nog niet mee.</p></div>
-    <section className="vat-summary-grid"><div className="card summary-card"><p>Btw die je hebt ontvangen</p><strong>{euro(vat.receivedVatCents)}</strong><span>Dit komt uit definitieve verkoopfacturen</span></div><div className="card summary-card"><p>Btw die je hebt betaald</p><strong>− {euro(vat.paidVatCents)}</strong><span>Dit komt uit ingevoerde zakelijke kosten</span></div><div className="card summary-card dark-summary"><p>{isPayable ? "Te betalen" : "Terug te krijgen"}</p><strong>{resultAmount}</strong><span>Conceptberekening {vat.period}</span></div></section>
+    <section className="vat-summary-grid"><div className="card summary-card"><p>Btw die je hebt ontvangen</p><strong>{euro(vat.receivedVatCents)}</strong><span>Dit komt uit definitieve verkoopfacturen</span></div><div className="card summary-card"><p>Kosten zonder btw</p><strong>{euro(vat.expenseExclTotalCents)}</strong><span>{vat.expenseCount} kostenpost{vat.expenseCount === 1 ? "" : "en"} in {vat.period}</span></div><div className="card summary-card"><p>Btw die je hebt betaald</p><strong>− {euro(vat.paidVatCents)}</strong><span>Dit komt uit ingevoerde zakelijke kosten</span></div><div className="card summary-card dark-summary"><p>{isPayable ? "Te betalen" : "Terug te krijgen"}</p><strong>{resultAmount}</strong><span>Conceptberekening {vat.period}</span></div></section>
     <section className="vat-steps card"><div className="card-header"><div><p className="eyebrow">ZO REKENT HELDER</p><h2>Van facturen naar btw-bedrag</h2></div></div><div className="vat-step-list"><div><span>1</span><strong>Verkoopfacturen</strong><p>Helder telt de btw op je verstuurde en betaalde verkoopfacturen bij elkaar op.</p></div><div><span>2</span><strong>Zakelijke kosten</strong><p>Daarna trekt Helder de btw af die je hebt betaald op ingevoerde kosten en bonnetjes.</p></div><div><span>3</span><strong>Uitkomst</strong><p>Het verschil is het bedrag dat je waarschijnlijk moet betalen of terugkrijgt.</p></div></div></section>
     <div className="vat-explanation card"><span className="round-icon">%</span><div><h2>De rekensom</h2><p>Ontvangen btw min betaalde btw. Dit rapport kun je downloaden als pdf voor je eigen controle of overleg met je boekhouder.</p></div><strong>{euro(vat.receivedVatCents)} − {euro(vat.paidVatCents)} = {euro(vat.payableVatCents)}</strong></div>
     <section className="vat-help-grid"><div className="card vat-help-card"><h2>Wat betekent “ontvangen btw”?</h2><p>Dat is de btw die jij op verkoopfacturen aan klanten hebt berekend. Die btw is niet echt omzet; je draagt die normaal gesproken af.</p></div><div className="card vat-help-card"><h2>Wat betekent “voorbelasting”?</h2><p>Dat is btw die jij op zakelijke kosten hebt betaald. Die mag je vaak verrekenen met de btw die je hebt ontvangen.</p></div></section>
