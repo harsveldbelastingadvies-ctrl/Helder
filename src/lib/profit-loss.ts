@@ -1,0 +1,171 @@
+import "server-only";
+
+import { calculateExpense, type VatRate } from "./expense";
+import { supabaseSelect, usesSupabaseStorage } from "./supabase";
+
+type InvoiceResultRow = {
+  invoiceId: string;
+  issueDate: string;
+  customerName: string;
+  quantity: number;
+  unitPriceCents: number;
+};
+
+type ExpenseResultRow = {
+  id: string;
+  expenseDate: string;
+  supplier: string;
+  description: string;
+  category: string;
+  amountInclCents: number;
+  vatRate: VatRate;
+  depreciationYears: number;
+};
+
+type SupabaseInvoiceLineRow = {
+  id: string;
+  quantity: number;
+  unit_price_cents: number;
+  invoices: {
+    id: string;
+    issue_date: string;
+    status: string;
+    customers: { name: string } | null;
+  } | null;
+};
+
+type SupabaseExpenseRow = {
+  id: string;
+  expense_date: string;
+  supplier: string;
+  description: string;
+  category: string;
+  amount_incl_cents: number;
+  vat_rate: VatRate;
+  depreciation_years: number;
+};
+
+export type DepreciationRow = {
+  id: string;
+  supplier: string;
+  description: string;
+  purchaseYear: number;
+  depreciationYears: number;
+  purchaseAmountExclCents: number;
+  yearlyDepreciationCents: number;
+  currentYearDepreciationCents: number;
+  remainingYears: number;
+};
+
+export type ProfitLossSummary = {
+  year: number;
+  revenueCents: number;
+  regularExpensesCents: number;
+  depreciationCents: number;
+  profitCents: number;
+  investmentPurchasesCents: number;
+  depreciationRows: DepreciationRow[];
+};
+
+async function getInvoiceRows(userId: string, start: string, end: string) {
+  if (usesSupabaseStorage()) {
+    const rows = await supabaseSelect<SupabaseInvoiceLineRow>("invoice_lines", {
+      select: "id,quantity,unit_price_cents,invoices!inner(id,issue_date,status,user_id,customers(name))",
+      filters: {
+        "invoices.user_id": userId,
+        "invoices.status": { op: "neq", value: "Concept" },
+        "invoices.issue_date": { op: "gte", value: start },
+      },
+    });
+    return rows
+      .filter((row) => row.invoices && row.invoices.issue_date <= end)
+      .map((row): InvoiceResultRow => ({
+        invoiceId: row.invoices!.id,
+        issueDate: row.invoices!.issue_date,
+        customerName: row.invoices!.customers?.name ?? "Klant",
+        quantity: Number(row.quantity),
+        unitPriceCents: row.unit_price_cents,
+      }));
+  }
+  const { db } = await import("./db");
+  return db.prepare(`SELECT invoices.id AS invoiceId, invoices.issue_date AS issueDate,
+      customers.name AS customerName, invoice_lines.quantity, invoice_lines.unit_price_cents AS unitPriceCents
+    FROM invoice_lines
+    JOIN invoices ON invoices.id = invoice_lines.invoice_id
+    JOIN customers ON customers.id = invoices.customer_id
+    WHERE invoices.user_id = ? AND invoices.issue_date BETWEEN ? AND ? AND invoices.status != 'Concept'`)
+    .all(userId, start, end) as InvoiceResultRow[];
+}
+
+async function getExpenseRows(userId: string) {
+  if (usesSupabaseStorage()) {
+    const rows = await supabaseSelect<SupabaseExpenseRow>("expenses", {
+      select: "id,expense_date,supplier,description,category,amount_incl_cents,vat_rate,depreciation_years",
+      filters: { user_id: userId },
+      order: "expense_date.asc,supplier.asc",
+    });
+    return rows.map((row): ExpenseResultRow => ({
+      id: row.id,
+      expenseDate: row.expense_date,
+      supplier: row.supplier,
+      description: row.description,
+      category: row.category,
+      amountInclCents: row.amount_incl_cents,
+      vatRate: row.vat_rate,
+      depreciationYears: row.depreciation_years,
+    }));
+  }
+  const { db } = await import("./db");
+  return db.prepare(`SELECT id, expense_date AS expenseDate, supplier, description, category,
+      amount_incl_cents AS amountInclCents, vat_rate AS vatRate, depreciation_years AS depreciationYears
+    FROM expenses
+    WHERE user_id = ?
+    ORDER BY expense_date ASC, supplier ASC`)
+    .all(userId) as ExpenseResultRow[];
+}
+
+export async function getProfitLoss(userId: string, year = new Date().getFullYear()): Promise<ProfitLossSummary> {
+  const start = `${year}-01-01`;
+  const end = `${year}-12-31`;
+  const [invoiceRows, expenseRows] = await Promise.all([getInvoiceRows(userId, start, end), getExpenseRows(userId)]);
+
+  const revenueCents = invoiceRows.reduce((sum, line) => sum + Math.round(line.quantity * line.unitPriceCents), 0);
+  const regularExpensesCents = expenseRows
+    .filter((expense) => expense.depreciationYears <= 1 && expense.expenseDate >= start && expense.expenseDate <= end)
+    .reduce((sum, expense) => sum + calculateExpense(expense.amountInclCents, expense.vatRate).amountExclCents, 0);
+
+  const investmentRows = expenseRows.filter((expense) => expense.depreciationYears > 1);
+  const depreciationRows = investmentRows.map((expense): DepreciationRow => {
+    const purchaseYear = Number(expense.expenseDate.slice(0, 4));
+    const purchaseAmountExclCents = calculateExpense(expense.amountInclCents, expense.vatRate).amountExclCents;
+    const yearlyDepreciationCents = Math.round(purchaseAmountExclCents / expense.depreciationYears);
+    const active = year >= purchaseYear && year < purchaseYear + expense.depreciationYears;
+    return {
+      id: expense.id,
+      supplier: expense.supplier,
+      description: `${expense.description} (${expense.category})`,
+      purchaseYear,
+      depreciationYears: expense.depreciationYears,
+      purchaseAmountExclCents,
+      yearlyDepreciationCents,
+      currentYearDepreciationCents: active ? yearlyDepreciationCents : 0,
+      remainingYears: active ? purchaseYear + expense.depreciationYears - year - 1 : 0,
+    };
+  });
+
+  const depreciationCents = depreciationRows.reduce((sum, row) => sum + row.currentYearDepreciationCents, 0);
+  const investmentPurchasesCents = investmentRows
+    .filter((expense) => expense.expenseDate >= start && expense.expenseDate <= end)
+    .reduce((sum, expense) => sum + calculateExpense(expense.amountInclCents, expense.vatRate).amountExclCents, 0);
+
+  return {
+    year,
+    revenueCents,
+    regularExpensesCents,
+    depreciationCents,
+    profitCents: revenueCents - regularExpensesCents - depreciationCents,
+    investmentPurchasesCents,
+    depreciationRows,
+  };
+}
+
