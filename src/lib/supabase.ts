@@ -1,8 +1,8 @@
 import "server-only";
 
 type QueryValue = string | number | boolean;
-type QueryOperator = "eq" | "neq" | "gt" | "gte" | "lt" | "lte";
-type QueryFilter = QueryValue | { op: QueryOperator; value: QueryValue };
+type QueryOperator = "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "in";
+type QueryFilter = QueryValue | { op: Exclude<QueryOperator, "in">; value: QueryValue } | { op: "in"; value: QueryValue[] };
 
 type SupabaseConfig = {
   url: string;
@@ -42,7 +42,11 @@ function buildQuery(filters?: Record<string, QueryFilter>, extra?: Record<string
   const params = new URLSearchParams(extra);
   for (const [key, value] of Object.entries(filters ?? {})) {
     if (typeof value === "object") {
-      params.set(key, `${value.op}.${String(value.value)}`);
+      if (value.op === "in") {
+        params.set(key, `in.(${value.value.map(String).join(",")})`);
+      } else {
+        params.set(key, `${value.op}.${String(value.value)}`);
+      }
     } else {
       params.set(key, `eq.${String(value)}`);
     }

@@ -22,16 +22,22 @@ type ExpenseResultRow = {
   depreciationYears: number;
 };
 
+type SupabaseInvoiceRow = {
+  id: string;
+  issue_date: string;
+  customer_id: string;
+};
+
 type SupabaseInvoiceLineRow = {
   id: string;
+  invoice_id: string;
   quantity: number;
   unit_price_cents: number;
-  invoices: {
-    id: string;
-    issue_date: string;
-    status: string;
-    customers: { name: string } | null;
-  } | null;
+};
+
+type SupabaseCustomerRow = {
+  id: string;
+  name: string;
 };
 
 type SupabaseExpenseRow = {
@@ -69,23 +75,49 @@ export type ProfitLossSummary = {
 
 async function getInvoiceRows(userId: string, start: string, end: string) {
   if (usesSupabaseStorage()) {
-    const rows = await supabaseSelect<SupabaseInvoiceLineRow>("invoice_lines", {
-      select: "id,quantity,unit_price_cents,invoices!inner(id,issue_date,status,user_id,customers(name))",
+    const invoices = await supabaseSelect<SupabaseInvoiceRow>("invoices", {
+      select: "id,issue_date,customer_id",
       filters: {
-        "invoices.user_id": userId,
-        "invoices.status": { op: "neq", value: "Concept" },
-        "invoices.issue_date": { op: "gte", value: start },
+        user_id: userId,
+        status: { op: "neq", value: "Concept" },
+        issue_date: { op: "gte", value: start },
       },
+      order: "issue_date.asc,id.asc",
     });
-    return rows
-      .filter((row) => row.invoices && row.invoices.issue_date <= end)
-      .map((row): InvoiceResultRow => ({
-        invoiceId: row.invoices!.id,
-        issueDate: row.invoices!.issue_date,
-        customerName: row.invoices!.customers?.name ?? "Klant",
-        quantity: Number(row.quantity),
-        unitPriceCents: row.unit_price_cents,
-      }));
+    const yearInvoices = invoices.filter((invoice) => invoice.issue_date <= end);
+    if (!yearInvoices.length) return [];
+
+    const invoiceIds = yearInvoices.map((invoice) => invoice.id);
+    const customerIds = [...new Set(yearInvoices.map((invoice) => invoice.customer_id))];
+    const [lines, customers] = await Promise.all([
+      supabaseSelect<SupabaseInvoiceLineRow>("invoice_lines", {
+        select: "id,invoice_id,quantity,unit_price_cents",
+        filters: { invoice_id: { op: "in", value: invoiceIds } },
+        order: "created_at.asc,id.asc",
+      }),
+      customerIds.length
+        ? supabaseSelect<SupabaseCustomerRow>("customers", {
+          select: "id,name",
+          filters: { user_id: userId, id: { op: "in", value: customerIds } },
+        })
+        : Promise.resolve([]),
+    ]);
+    const invoiceById = new Map(yearInvoices.map((invoice) => [invoice.id, invoice]));
+    const customerById = new Map(customers.map((customer) => [customer.id, customer]));
+
+    return lines
+      .map((row): InvoiceResultRow | null => {
+        const invoice = invoiceById.get(row.invoice_id);
+        if (!invoice) return null;
+        return {
+          invoiceId: invoice.id,
+          issueDate: invoice.issue_date,
+          customerName: customerById.get(invoice.customer_id)?.name ?? "Klant",
+          quantity: Number(row.quantity),
+          unitPriceCents: Number(row.unit_price_cents),
+        };
+      })
+      .filter((row): row is InvoiceResultRow => Boolean(row));
   }
   const { db } = await import("./db");
   return db.prepare(`SELECT invoices.id AS invoiceId, invoices.issue_date AS issueDate,
@@ -110,9 +142,9 @@ async function getExpenseRows(userId: string) {
       supplier: row.supplier,
       description: row.description,
       category: row.category,
-      amountInclCents: row.amount_incl_cents,
-      vatRate: row.vat_rate,
-      depreciationYears: row.depreciation_years,
+      amountInclCents: Number(row.amount_incl_cents),
+      vatRate: Number(row.vat_rate) as VatRate,
+      depreciationYears: Number(row.depreciation_years),
     }));
   }
   const { db } = await import("./db");
@@ -168,4 +200,3 @@ export async function getProfitLoss(userId: string, year = new Date().getFullYea
     depreciationRows,
   };
 }
-
