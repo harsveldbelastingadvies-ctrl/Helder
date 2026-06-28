@@ -62,11 +62,6 @@ Doe de eerste test zonder echte klantgegevens:
 
 ## 5. PDF-downloads
 
-Helder maakt PDF’s nu via Python en de bibliotheek `reportlab`. Dat werkt lokaal goed. Voor Vercel moet dit apart getest worden.
-
-Als de livegang-check meldt dat de PDF-motor niet beschikbaar is, zijn er twee routes:
-
-1. Python/reportlab geschikt maken voor de hostingomgeving.
-2. De PDF-functies ombouwen naar een oplossing die volledig binnen Next.js/Node draait.
+Helder maakt PDF’s nu met een ingebouwde PDF-generator die binnen Next.js/Node draait. Daardoor is er online geen aparte Python-installatie of `reportlab` meer nodig.
 
 Voor echte livegang moet minimaal één factuur-PDF en één rapport-PDF succesvol online zijn getest.

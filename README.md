@@ -66,4 +66,3 @@ Je kunt ook lokaal een eigen testaccount aanmaken via **Account aanmaken**. Dat 
 De app kan lokaal draaien of met Supabase als online opslag worden gebruikt. Voordat de app echt live gaat met ondernemersgegevens, moeten hosting, e-mail, back-ups en privacy/security nog rustig worden gecontroleerd.
 
 Voor die volgende fase is alvast een eerste voorbereiding gemaakt. Zie [docs/production-readiness.md](/Users/ralf/Documents/Codex/2026-06-21/maa/docs/production-readiness.md) voor de productie-checklist en [docs/vercel-stappenplan.md](/Users/ralf/Documents/Codex/2026-06-21/maa/docs/vercel-stappenplan.md) voor het online zetten via Vercel.
-

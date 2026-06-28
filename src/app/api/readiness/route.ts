@@ -118,10 +118,10 @@ export async function GET() {
     ok: pdfRuntime.ok,
     detail: pdfRuntime.ok
       ? "De PDF-motor is beschikbaar voor facturen en rapporten."
-      : "De PDF-motor is nog niet beschikbaar in deze omgeving.",
+      : "De ingebouwde PDF-motor kon niet worden gecontroleerd.",
     action: pdfRuntime.ok
       ? "Geen actie nodig. Test online nog één factuur-PDF en één rapport-PDF."
-      : "Controleer of Python met reportlab beschikbaar is, of bouw de PDF-functies om naar een Vercel-vriendelijke PDF-oplossing.",
+      : "Controleer de deployment en test één factuur-PDF en één rapport-PDF opnieuw.",
   });
 
   const ready = items.filter((item) => item.ok).length;

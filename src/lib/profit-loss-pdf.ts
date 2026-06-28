@@ -1,19 +1,40 @@
 import "server-only";
 
-import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { euro } from "./invoice";
 import type { ProfitLossSummary } from "./profit-loss";
-import { getPdfPython } from "./pdf-runtime";
+import { createSimplePdf } from "./simple-pdf";
 
 export function generateProfitLossPdf(summary: ProfitLossSummary) {
-  const python = getPdfPython();
-  const result = spawnSync(python, [path.join(process.cwd(), "scripts", "generate_profit_loss_pdf.py")], {
-    input: JSON.stringify(summary),
-    maxBuffer: 5 * 1024 * 1024,
+  return createSimplePdf({
+    title: `Concept winst en verlies ${summary.year}`,
+    subtitle: "Conceptoverzicht voor je administratie. Controleer dit met je boekhouder of adviseur.",
+    footer: "Gemaakt met Helder - concept winst en verlies",
+    sections: [
+      {
+        title: "Samenvatting",
+        facts: [
+          ["Omzet zonder btw", euro(summary.revenueCents)],
+          ["Gewone kosten zonder btw", euro(summary.regularExpensesCents)],
+          ["Afschrijvingen", euro(summary.depreciationCents)],
+          [summary.profitCents >= 0 ? "Concept winst" : "Concept verlies", euro(Math.abs(summary.profitCents))],
+          ["Nieuwe investeringen", euro(summary.investmentPurchasesCents)],
+        ],
+      },
+      {
+        title: "Afschrijvingen",
+        lines: summary.depreciationRows.length ? [] : ["Er zijn nog geen investeringen met afschrijving ingevoerd."],
+        table: summary.depreciationRows.length ? {
+          headers: ["Investering", "Jaar", "Aanschaf", "Looptijd", "Dit jaar", "Resterend"],
+          rows: summary.depreciationRows.map((row) => [
+            `${row.supplier} - ${row.description}`,
+            String(row.purchaseYear),
+            euro(row.purchaseAmountExclCents),
+            `${row.depreciationYears} jaar`,
+            euro(row.currentYearDepreciationCents),
+            `${row.remainingYears} jaar`,
+          ]),
+        } : undefined,
+      },
+    ],
   });
-  if (result.status !== 0 || !result.stdout.length) {
-    console.error(result.stderr.toString());
-    throw new Error("De winst- en verliesrekening kon niet als pdf worden gemaakt.");
-  }
-  return Buffer.from(result.stdout);
 }
