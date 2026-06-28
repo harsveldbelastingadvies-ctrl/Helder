@@ -1,0 +1,30 @@
+Helder openen
+==============
+
+Gebruik deze simpele manier:
+
+1. Open Finder.
+2. Ga naar:
+   /Users/ralf/Documents/Codex/2026-06-21/maa
+3. Klik met de rechtermuisknop op:
+   Open Helder.command
+4. Kies: Open
+5. Laat het Terminal-venster openstaan.
+
+Daarna opent Helder meestal vanzelf.
+Zo niet, open dan:
+
+http://127.0.0.1:3000
+
+Stoppen
+=======
+
+Ga naar het Terminal-venster en druk op:
+
+Control + C
+
+Belangrijk
+==========
+
+Sluit het Terminal-venster niet terwijl je Helder gebruikt.
+Dat venster is de lokale "aan-knop" van de app.
