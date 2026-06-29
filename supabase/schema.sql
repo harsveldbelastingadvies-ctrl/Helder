@@ -22,6 +22,8 @@ create table if not exists users (
   subscription_status text not null default 'trialing' check (subscription_status in ('trialing', 'active', 'past_due', 'canceled')),
   trial_started_at timestamptz,
   trial_ends_at timestamptz,
+  mollie_customer_id text,
+  mollie_last_payment_id text,
   email_verified_at timestamptz,
   email_verification_token_hash text,
   email_verification_expires_at bigint,
@@ -127,4 +129,6 @@ alter table users add column if not exists plan_type text not null default 'basi
 alter table users add column if not exists subscription_status text not null default 'trialing';
 alter table users add column if not exists trial_started_at timestamptz;
 alter table users add column if not exists trial_ends_at timestamptz;
+alter table users add column if not exists mollie_customer_id text;
+alter table users add column if not exists mollie_last_payment_id text;
 alter table invoices add column if not exists invoice_footer text not null default 'Bedankt voor de fijne samenwerking.';

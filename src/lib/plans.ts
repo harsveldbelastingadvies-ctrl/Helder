@@ -6,6 +6,7 @@ export const TRIAL_DAYS = 14;
 export const HELDER_PLANS: Array<{
   id: PlanId;
   name: string;
+  monthlyPriceCents: number;
   priceLabel: string;
   shortDescription: string;
   features: string[];
@@ -13,6 +14,7 @@ export const HELDER_PLANS: Array<{
   {
     id: "basis",
     name: "Basis",
+    monthlyPriceCents: 1900,
     priceLabel: "€ 19 p/m",
     shortDescription: "Voor zzp en kleine ondernemers die zelf overzicht willen.",
     features: ["Facturen en PDF", "Kosten en bonnetjes", "Btw-overzicht", "Klantenlijst"],
@@ -20,6 +22,7 @@ export const HELDER_PLANS: Array<{
   {
     id: "dga",
     name: "DGA-voorbereiding",
+    monthlyPriceCents: 3900,
     priceLabel: "€ 39 p/m",
     shortDescription: "Voor B.V./DGA-administraties met duidelijke aandachtspunten.",
     features: ["Alles uit Basis", "DGA-signalen", "Extra jaarcheck", "Voorbereiding voor overleg"],
@@ -27,6 +30,7 @@ export const HELDER_PLANS: Array<{
   {
     id: "begeleiding",
     name: "Begeleiding",
+    monthlyPriceCents: 7900,
     priceLabel: "€ 79 p/m",
     shortDescription: "Voor ondernemers die af en toe willen sparren of laten meekijken.",
     features: ["Alles uit DGA", "Sparmomenten", "Controle op hoofdlijnen", "Persoonlijke begeleiding"],

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { calculateInvoice, euro, parseEuro, type InvoiceLine } from "@/lib/invoice";
 import { calculateExpense, type VatRate } from "@/lib/expense";
 import { summarizeInvoiceAging } from "@/lib/invoice-aging";
-import { HELDER_PLANS, TRIAL_DAYS, getPlan, isBillingBlocked, type PlanId, type SubscriptionStatus } from "@/lib/plans";
+import { HELDER_PLANS, TRIAL_DAYS, getPlan, isBillingBlocked, trialDaysLeft, type PlanId, type SubscriptionStatus } from "@/lib/plans";
 
 type View = "dashboard" | "invoices" | "customers" | "expenses" | "profit" | "yearEnd" | "vat" | "help" | "settings";
 type InvoiceStatus = "Betaald" | "Openstaand" | "Concept" | "Te laat";
@@ -556,7 +556,28 @@ function LoginScreen({ onLogin, onRegistered }: { onLogin: (email: string, passw
 
 function BillingBlockedScreen({ user, onLogout }: { user: User; onLogout: () => Promise<void> }) {
   const plan = getPlan(user.planType);
-  return <main className="auth-shell billing-shell"><section className="billing-card"><div className="auth-brand"><span className="brand-mark">h</span><span>helder</span></div><p className="eyebrow">PROEFPERIODE AFGELOPEN</p><h1>Activeer je pakket om Helder verder te gebruiken.</h1><p>De proefperiode voor <strong>{user.companyName}</strong> is afgelopen. Om te voorkomen dat Helder kosteloos doorloopt, is de administratie tijdelijk vergrendeld totdat het gekozen pakket actief is.</p><div className="billing-plan-summary"><span>Gekozen pakket</span><strong>{plan.name}</strong><em>{plan.priceLabel}</em></div><div className="billing-actions"><a className="primary-button" href={`mailto:info@harsveldbelastingadvies.nl?subject=Helder pakket activeren&body=Hallo,%0D%0A%0D%0AIk wil mijn Helder-pakket activeren.%0D%0AAccount: ${encodeURIComponent(user.email)}%0D%0APakket: ${encodeURIComponent(plan.name)}%0D%0A`}>Pakket activeren</a><button className="secondary-button" onClick={() => void onLogout()}>Uitloggen</button></div><small>Volgende stap: deze knop koppelen we aan een echte betaalpagina via Stripe of Mollie. Tot die tijd kun je de activatie handmatig afhandelen.</small></section></main>;
+  return <main className="auth-shell billing-shell"><section className="billing-card"><div className="auth-brand"><span className="brand-mark">h</span><span>helder</span></div><p className="eyebrow">PROEFPERIODE AFGELOPEN</p><h1>Activeer je pakket om Helder verder te gebruiken.</h1><p>De proefperiode voor <strong>{user.companyName}</strong> is afgelopen. Om te voorkomen dat Helder kosteloos doorloopt, is de administratie tijdelijk vergrendeld totdat het gekozen pakket actief is.</p><div className="billing-plan-summary"><span>Gekozen pakket</span><strong>{plan.name}</strong><em>{plan.priceLabel}</em></div><div className="billing-actions"><BillingCheckoutButton label="Pakket activeren via Mollie" /><button className="secondary-button" onClick={() => void onLogout()}>Uitloggen</button></div><small>Na betaling stuurt Mollie je terug naar Helder. In de volgende stap verwerkt de webhook de betaling automatisch naar actief.</small></section></main>;
+}
+
+function BillingCheckoutButton({ label = "Pakket activeren" }: { label?: string }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function startCheckout() {
+    setError("");
+    setLoading(true);
+    try {
+      const response = await fetch("/api/billing/checkout", { method: "POST" });
+      const data = await response.json() as { checkoutUrl?: string; error?: string };
+      if (!response.ok || !data.checkoutUrl) throw new Error(data.error ?? "Mollie-betaalpagina kon niet worden geopend.");
+      window.location.href = data.checkoutUrl;
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Mollie-betaalpagina kon niet worden geopend.");
+      setLoading(false);
+    }
+  }
+
+  return <span className="billing-button-wrap"><button className="primary-button" type="button" onClick={() => void startCheckout()} disabled={loading}>{loading ? "Mollie openen…" : label}</button>{error && <small className="billing-error">{error}</small>}</span>;
 }
 
 function Dashboard({ user, companySettings, invoices, customers, expenses, vat, profitLoss, tasks, onCreate, onCreateCustomer, onCreateExpense, onViewInvoices, onViewCustomers, onViewExpenses, onViewProfit, onViewVat, onViewSettings, onOpenCustomer, onCompleteTask }: { user: User; companySettings: CompanySettings | null; invoices: Invoice[]; customers: Customer[]; expenses: Expense[]; vat: VatSummary; profitLoss: ProfitLossSummary | null; tasks: DashboardTask[]; onCreate: () => void; onCreateCustomer: () => void; onCreateExpense: () => void; onViewInvoices: () => void; onViewCustomers: () => void; onViewExpenses: () => void; onViewProfit: () => void; onViewVat: () => void; onViewSettings: () => void; onOpenCustomer: (id: string) => void; onCompleteTask: (id: string) => Promise<void> }) {
@@ -604,6 +625,7 @@ function Dashboard({ user, companySettings, invoices, customers, expenses, vat, 
   return <>
     <section className="page-heading"><div><p className="eyebrow">{headingDate.toUpperCase()}</p><h1>Goedemorgen, {user.name}</h1><p>Dit gebeurt er vandaag in je onderneming.</p></div><button className="primary-button" onClick={onCreate}><Icon name="plus" size={18}/>Nieuwe factuur</button></section>
     <NextActionCard action={nextAction} />
+    <BillingNotice user={user} />
     {isDgaCompany(companySettings) && <DgaPreparationCard onSettings={onViewSettings} />}
     <section className="metrics-grid">
       <Metric label="Omzet deze maand" value={euro(revenueThisMonth)} delta={revenueDelta} sub="ten opzichte van vorige maand" accent />
@@ -625,6 +647,13 @@ function Dashboard({ user, companySettings, invoices, customers, expenses, vat, 
 
 function NextActionCard({ action }: { action: NextAction }) {
   return <section className={`next-action card ${action.tone ? `next-action-${action.tone}` : ""}`}><div className="next-action-icon"><Icon name={action.tone === "warning" ? "bell" : "arrow"} size={20}/></div><div><p className="eyebrow">{action.label}</p><h2>{action.title}</h2><p>{action.description}</p></div><button className="primary-button" onClick={action.action}>{action.buttonLabel}</button></section>;
+}
+
+function BillingNotice({ user }: { user: User }) {
+  if (user.subscriptionStatus === "active") return null;
+  const plan = getPlan(user.planType);
+  const daysLeft = trialDaysLeft(user.trialEndsAt);
+  return <section className="card billing-notice"><div><p className="eyebrow">PROEFPERIODE</p><h2>{daysLeft === null ? "Activeer je pakket wanneer je klaar bent" : `${daysLeft} dag${daysLeft === 1 ? "" : "en"} proefperiode over`}</h2><p>Je gebruikt nu {plan.name} ({plan.priceLabel}). Activeer op tijd, dan loopt Helder niet vast na de proefperiode.</p></div><BillingCheckoutButton label="Nu activeren" /></section>;
 }
 
 function DgaPreparationCard({ onSettings }: { onSettings: () => void }) {
