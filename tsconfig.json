@@ -39,6 +39,7 @@
     "node_modules",
     "helder-upload-voor-github",
     "helder-upload-voor-github-schoon",
-    "helder-laatste-wijzigingen-voor-github"
+    "helder-laatste-wijzigingen-voor-github",
+    "rekenrust-upload-laatste-wijzigingen"
   ]
 }
