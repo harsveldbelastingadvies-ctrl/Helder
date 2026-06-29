@@ -1081,6 +1081,28 @@ function BillingStatusCard() {
     return status || "Onbekend";
   }
 
+  function mollieCustomerLabel(currentBilling: BillingStatusOverview | null) {
+    if (!currentBilling) return "...";
+    if (!currentBilling.mollieConfigured) return "Niet ingesteld";
+    return currentBilling.mollieCustomerId ? "Gekoppeld" : "Nog niet gekoppeld";
+  }
+
+  function mollieSubscriptionLabel(currentBilling: BillingStatusOverview | null) {
+    if (!currentBilling) return "...";
+    if (!currentBilling.mollieConfigured) return "Niet ingesteld";
+    if (currentBilling.mollieSubscriptionId) return currentBilling.subscriptionStatus === "past_due" ? "Aandacht nodig" : "Actief gekoppeld";
+    if (currentBilling.subscriptionStatus === "trialing") return "Nog proefperiode";
+    return "Nog niet actief";
+  }
+
+  function molliePaymentLabel(currentBilling: BillingStatusOverview | null) {
+    if (!currentBilling) return "...";
+    if (!currentBilling.mollieConfigured) return "Niet ingesteld";
+    if (currentBilling.mollieLastPaymentId) return "Betaling bekend";
+    if (currentBilling.subscriptionStatus === "trialing") return "Nog geen betaling";
+    return "Nog onbekend";
+  }
+
   async function loadBilling(method: "GET" | "POST" = "GET") {
     setLoading(true);
     setError("");
@@ -1131,7 +1153,7 @@ function BillingStatusCard() {
   const tone = billing?.subscriptionStatus === "active" ? "billing-status-card billing-status-active" : billing?.subscriptionStatus === "past_due" ? "billing-status-card billing-status-warning" : "billing-status-card";
   const canChangePlan = Boolean(billing && billing.subscriptionStatus !== "active" && !billing.mollieSubscriptionId);
 
-  return <section className={`card ${tone}`}><p className="eyebrow">ABONNEMENT</p><h2>{billing ? `${billing.planName} · ${billing.priceLabel}` : "Abonnement laden"}</h2><p>{billing ? `Status: ${statusLabel(billing.subscriptionStatus)}${billing.subscriptionStatus === "trialing" && daysLeft !== null ? ` · ${daysLeft} dagen proefperiode over` : ""}.` : "Rekenrust controleert pakket, proefperiode en Mollie-koppeling."}</p><div className="billing-status-list"><span><strong>{billing ? statusLabel(billing.subscriptionStatus) : "..."}</strong><small>Status</small></span><span><strong>{formatDate(billing?.trialEndsAt ?? null)}</strong><small>Einde proefperiode</small></span><span><strong>{formatDate(billing?.subscriptionActivatedAt ?? null)}</strong><small>Geactiveerd op</small></span></div>{billing && <div className="billing-plan-switch"><strong>Pakket kiezen</strong><p>{canChangePlan ? "Je kunt je pakket nog aanpassen voordat het abonnement actief wordt." : "Je pakket staat vast voor dit actieve abonnement. Wijzigen kan veilig via contact."}</p>{HELDER_PLANS.map((plan) => <button type="button" key={plan.id} className={billing.planType === plan.id ? "plan-option selected" : "plan-option"} onClick={() => void changePlan(plan.id)} disabled={!canChangePlan || loading || Boolean(planChanging)}><strong>{plan.name}<em>{plan.priceLabel}</em></strong><small>{planChanging === plan.id ? "Pakket wijzigen…" : plan.shortDescription}</small></button>)}</div>}<div className="billing-id-list"><span><strong>{billing?.mollieCustomerId ?? "Nog niet"}</strong><small>Mollie klant</small></span><span><strong>{billing?.mollieSubscriptionId ?? "Nog niet"}</strong><small>Mollie abonnement</small></span><span><strong>{billing?.mollieLastPaymentId ?? "Nog niet"}</strong><small>Laatste betaling</small></span></div>{billing && !billing.mollieConfigured && <small className="security-error">Mollie API-key ontbreekt nog in deze omgeving.</small>}{message && <small className="security-success">{message}</small>}{error && <small className="security-error">{error}</small>}<button className="secondary-button" type="button" onClick={() => void loadBilling("POST")} disabled={loading}>{loading ? "Controleren…" : "Mollie-status opnieuw controleren"}</button></section>;
+  return <section className={`card ${tone}`}><p className="eyebrow">ABONNEMENT</p><h2>{billing ? `${billing.planName} · ${billing.priceLabel}` : "Abonnement laden"}</h2><p>{billing ? `Status: ${statusLabel(billing.subscriptionStatus)}${billing.subscriptionStatus === "trialing" && daysLeft !== null ? ` · ${daysLeft} dagen proefperiode over` : ""}.` : "Rekenrust controleert pakket, proefperiode en Mollie-koppeling."}</p><div className="billing-status-list"><span><strong>{billing ? statusLabel(billing.subscriptionStatus) : "..."}</strong><small>Status</small></span><span><strong>{formatDate(billing?.trialEndsAt ?? null)}</strong><small>Einde proefperiode</small></span><span><strong>{formatDate(billing?.subscriptionActivatedAt ?? null)}</strong><small>Geactiveerd op</small></span></div>{billing && <div className="billing-plan-switch"><strong>Pakket kiezen</strong><p>{canChangePlan ? "Je kunt je pakket nog aanpassen voordat het abonnement actief wordt." : "Je pakket staat vast voor dit actieve abonnement. Wijzigen kan veilig via contact."}</p>{HELDER_PLANS.map((plan) => <button type="button" key={plan.id} className={billing.planType === plan.id ? "plan-option selected" : "plan-option"} onClick={() => void changePlan(plan.id)} disabled={!canChangePlan || loading || Boolean(planChanging)}><strong>{plan.name}<em>{plan.priceLabel}</em></strong><small>{planChanging === plan.id ? "Pakket wijzigen…" : plan.shortDescription}</small></button>)}</div>}<div className="billing-id-list"><span><strong>{mollieCustomerLabel(billing)}</strong><small>Betaalprofiel</small></span><span><strong>{mollieSubscriptionLabel(billing)}</strong><small>Abonnement bij Mollie</small></span><span><strong>{molliePaymentLabel(billing)}</strong><small>Laatste betaling</small></span></div>{billing?.mollieLastPaymentId && <small className="billing-reference">Interne betaalreferentie is bekend en wordt alleen gebruikt voor controle en support.</small>}{billing && !billing.mollieConfigured && <small className="security-error">Mollie API-key ontbreekt nog in deze omgeving.</small>}{message && <small className="security-success">{message}</small>}{error && <small className="security-error">{error}</small>}<button className="secondary-button" type="button" onClick={() => void loadBilling("POST")} disabled={loading}>{loading ? "Controleren…" : "Mollie-status opnieuw controleren"}</button></section>;
 }
 
 function SupportCard() {
