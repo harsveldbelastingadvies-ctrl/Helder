@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { createMollieCustomer, createMollieFirstPayment, getPublicAppUrl } from "@/lib/mollie";
+import { createMollieCustomer, createMollieFirstPayment, getMolliePayment, getPublicAppUrl, type MolliePayment } from "@/lib/mollie";
 import { getPlan } from "@/lib/plans";
 import { supabaseSingle, supabaseUpdate, usesSupabaseStorage } from "@/lib/supabase";
 
@@ -14,21 +14,29 @@ type BillingUserRow = {
   companyName?: string;
   plan_type?: string;
   planType?: string;
+  subscription_status?: string;
+  subscriptionStatus?: string;
   mollie_customer_id?: string | null;
   mollieCustomerId?: string | null;
+  mollie_last_payment_id?: string | null;
+  mollieLastPaymentId?: string | null;
+  mollie_subscription_id?: string | null;
+  mollieSubscriptionId?: string | null;
 };
 
 async function getBillingUser(userId: string) {
   if (usesSupabaseStorage()) {
     return await supabaseSingle<BillingUserRow>("users", {
-      select: "id,name,email,company_name,plan_type,mollie_customer_id",
+      select: "id,name,email,company_name,plan_type,subscription_status,mollie_customer_id,mollie_last_payment_id,mollie_subscription_id",
       filters: { id: userId },
     });
   }
 
   const { db } = await import("@/lib/db");
   return db.prepare(`SELECT id, name, email, company_name AS companyName, plan_type AS planType,
-    mollie_customer_id AS mollieCustomerId FROM users WHERE id = ?`).get(userId) as BillingUserRow | undefined;
+    subscription_status AS subscriptionStatus, mollie_customer_id AS mollieCustomerId,
+    mollie_last_payment_id AS mollieLastPaymentId, mollie_subscription_id AS mollieSubscriptionId
+    FROM users WHERE id = ?`).get(userId) as BillingUserRow | undefined;
 }
 
 async function updateBillingUser(userId: string, patch: { mollieCustomerId?: string; mollieLastPaymentId?: string }) {
@@ -53,6 +61,14 @@ function isLocalUrl(url: string) {
   return url.includes("localhost") || url.includes("127.0.0.1");
 }
 
+function checkoutUrlFrom(payment: MolliePayment) {
+  return payment._links?.checkout?.href ?? null;
+}
+
+function paymentCanBeReused(status: string) {
+  return status === "open" || status === "pending";
+}
+
 export async function POST(request: Request) {
   const sessionUser = await getSessionUser();
   if (!sessionUser) return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
@@ -61,6 +77,40 @@ export async function POST(request: Request) {
   if (!billingUser) return NextResponse.json({ error: "Account niet gevonden." }, { status: 404 });
 
   const plan = getPlan(billingUser.plan_type ?? billingUser.planType ?? sessionUser.planType);
+  const subscriptionStatus = billingUser.subscription_status ?? billingUser.subscriptionStatus ?? sessionUser.subscriptionStatus;
+  const mollieSubscriptionId = billingUser.mollie_subscription_id ?? billingUser.mollieSubscriptionId;
+  const mollieLastPaymentId = billingUser.mollie_last_payment_id ?? billingUser.mollieLastPaymentId;
+
+  if (subscriptionStatus === "active" && mollieSubscriptionId) {
+    return NextResponse.json({ error: "Je pakket is al actief. Je hoeft niet opnieuw te betalen." }, { status: 409 });
+  }
+
+  if (mollieLastPaymentId) {
+    try {
+      const previousPayment = await getMolliePayment(mollieLastPaymentId);
+      const previousCheckoutUrl = checkoutUrlFrom(previousPayment);
+      if (paymentCanBeReused(previousPayment.status) && previousCheckoutUrl) {
+        return NextResponse.json({
+          checkoutUrl: previousCheckoutUrl,
+          paymentId: previousPayment.id,
+          reusedPayment: true,
+        });
+      }
+      if (previousPayment.status === "paid" || previousPayment.status === "authorized") {
+        return NextResponse.json({
+          error: "Mollie heeft de vorige betaling al ontvangen. Controleer de abonnementsstatus of ververs Helder even.",
+        }, { status: 409 });
+      }
+      if (paymentCanBeReused(previousPayment.status)) {
+        return NextResponse.json({
+          error: "Er loopt al een betaling bij Mollie. Wacht even of controleer de abonnementsstatus.",
+        }, { status: 409 });
+      }
+    } catch {
+      // Als de oude Mollie-betaling niet meer kan worden opgehaald, maken we hieronder veilig een nieuwe betaalpoging.
+    }
+  }
+
   const appUrl = getPublicAppUrl(request);
   const mollieCustomerId = billingUser.mollie_customer_id ?? billingUser.mollieCustomerId
     ?? (await createMollieCustomer({
