@@ -29,6 +29,7 @@ type RevenueMonth = { key: string; label: string; valueCents: number };
 type StorageHealth = { ok: boolean; storage: "local" | "supabase"; database: string; fileStorage: string; bucket: string | null; configured: boolean; message: string; checkedAt: string };
 type LiveReadiness = { ok: boolean; score: number; storageMode: "local" | "supabase"; checkedAt: string; message: string; nextAction: string; items: Array<{ key: string; label: string; ok: boolean; detail: string; action: string }> };
 type BackupInspection = { ok: boolean; checkedAt: string; storage: "local" | "supabase"; counts: { customers: number; invoices: number; invoiceLines: number; expenses: number; receiptFiles: number; notes: number; tasks: number; receiptsListed: number }; warnings: string[]; message: string };
+type BillingStatusOverview = { planType: PlanId; planName: string; priceLabel: string; subscriptionStatus: string; trialStartedAt: string | null; trialEndsAt: string | null; subscriptionActivatedAt: string | null; mollieCustomerId: string | null; mollieLastPaymentId: string | null; mollieSubscriptionId: string | null; mollieConfigured: boolean; checkedAt: string };
 type ChecklistItem = { title: string; description: string; done: boolean; actionLabel: string; action: () => void };
 type NextAction = { label: string; title: string; description: string; buttonLabel: string; action: () => void; tone?: "warning" | "success" };
 type SearchResult = { id: string; kind: "invoice" | "customer" | "expense"; label: string; title: string; subtitle: string; meta: string; icon: string };
@@ -974,9 +975,56 @@ function Settings({ onSaved, onLoggedOut }: { onSaved: (settings: CompanySetting
 
 function DgaSettingsCard({ companyType }: { companyType: CompanyType }) {
   if (companyType !== "bv_dga") {
-    return <div className="card settings-note"><Icon name="check" size={18}/><p><strong>Soort onderneming</strong>Ingesteld als {companyTypeLabel(companyType)}. De standaard Helder-flow blijft gericht op eenvoudige ondernemersadministratie.</p></div>;
+    return <><div className="card settings-note"><Icon name="check" size={18}/><p><strong>Soort onderneming</strong>Ingesteld als {companyTypeLabel(companyType)}. De standaard Helder-flow blijft gericht op eenvoudige ondernemersadministratie.</p></div><BillingStatusCard /></>;
   }
-  return <div className="card dga-settings-card"><p className="eyebrow">DGA-VOORBEREIDING</p><h2>B.V. / DGA staat aan</h2><p>Helder kan de basisadministratie ondersteunen: klanten, facturen, kosten, btw en rapporten. Laat DGA-specifieke onderdelen apart begeleiden: gebruikelijk loon, loonheffing, rekening-courant, dividend, vennootschapsbelasting en jaarrekening.</p><ul><li>Gebruik Helder als verzamel- en controlesysteem.</li><li>Controleer periodiek met je adviseur wat buiten Helder valt.</li><li>Voorkom dat DGA-posten als gewone kosten worden verwerkt.</li></ul></div>;
+  return <><div className="card dga-settings-card"><p className="eyebrow">DGA-VOORBEREIDING</p><h2>B.V. / DGA staat aan</h2><p>Helder kan de basisadministratie ondersteunen: klanten, facturen, kosten, btw en rapporten. Laat DGA-specifieke onderdelen apart begeleiden: gebruikelijk loon, loonheffing, rekening-courant, dividend, vennootschapsbelasting en jaarrekening.</p><ul><li>Gebruik Helder als verzamel- en controlesysteem.</li><li>Controleer periodiek met je adviseur wat buiten Helder valt.</li><li>Voorkom dat DGA-posten als gewone kosten worden verwerkt.</li></ul></div><BillingStatusCard /></>;
+}
+
+function BillingStatusCard() {
+  const [billing, setBilling] = useState<BillingStatusOverview | null>(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  function formatDate(value: string | null) {
+    if (!value) return "Nog niet bekend";
+    return new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
+  }
+
+  function statusLabel(status: string) {
+    if (status === "active") return "Actief";
+    if (status === "trialing") return "Proefperiode";
+    if (status === "past_due") return "Betaling nodig";
+    if (status === "canceled") return "Gestopt";
+    return status || "Onbekend";
+  }
+
+  async function loadBilling(method: "GET" | "POST" = "GET") {
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch("/api/billing/status", { method });
+      const data = await response.json() as { billing?: BillingStatusOverview; message?: string; error?: string };
+      if (!response.ok || !data.billing) throw new Error(data.error ?? "Abonnementsstatus kon niet worden geladen.");
+      setBilling(data.billing);
+      if (data.message) setMessage(data.message);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Abonnementsstatus kon niet worden geladen.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadBilling("GET"), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const daysLeft = trialDaysLeft(billing?.trialEndsAt ?? null);
+  const tone = billing?.subscriptionStatus === "active" ? "billing-status-card billing-status-active" : billing?.subscriptionStatus === "past_due" ? "billing-status-card billing-status-warning" : "billing-status-card";
+
+  return <section className={`card ${tone}`}><p className="eyebrow">ABONNEMENT</p><h2>{billing ? `${billing.planName} · ${billing.priceLabel}` : "Abonnement laden"}</h2><p>{billing ? `Status: ${statusLabel(billing.subscriptionStatus)}${billing.subscriptionStatus === "trialing" && daysLeft !== null ? ` · ${daysLeft} dagen proefperiode over` : ""}.` : "Helder controleert pakket, proefperiode en Mollie-koppeling."}</p><div className="billing-status-list"><span><strong>{billing ? statusLabel(billing.subscriptionStatus) : "..."}</strong><small>Status</small></span><span><strong>{formatDate(billing?.trialEndsAt ?? null)}</strong><small>Einde proefperiode</small></span><span><strong>{formatDate(billing?.subscriptionActivatedAt ?? null)}</strong><small>Geactiveerd op</small></span></div><div className="billing-id-list"><span><strong>{billing?.mollieCustomerId ?? "Nog niet"}</strong><small>Mollie klant</small></span><span><strong>{billing?.mollieSubscriptionId ?? "Nog niet"}</strong><small>Mollie abonnement</small></span><span><strong>{billing?.mollieLastPaymentId ?? "Nog niet"}</strong><small>Laatste betaling</small></span></div>{billing && !billing.mollieConfigured && <small className="security-error">Mollie API-key ontbreekt nog in deze omgeving.</small>}{message && <small className="security-success">{message}</small>}{error && <small className="security-error">{error}</small>}<button className="secondary-button" type="button" onClick={() => void loadBilling("POST")} disabled={loading}>{loading ? "Controleren…" : "Mollie-status opnieuw controleren"}</button></section>;
 }
 
 function LiveReadinessCard() {
