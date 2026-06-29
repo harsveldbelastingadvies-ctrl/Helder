@@ -1,11 +1,11 @@
-# Vercel-stappenplan voor Helder
+# Vercel-stappenplan voor Rekenrust
 
-Dit document is bedoeld als rustige checklist voor het online zetten van Helder via Vercel.
+Dit document is bedoeld als rustige checklist voor het online zetten van Rekenrust via Vercel.
 
 ## 1. Account en project
 
 1. Maak een Vercel-account aan.
-2. Koppel de Helder-code aan een nieuw Vercel-project.
+2. Koppel de Rekenrust-code aan een nieuw Vercel-project.
 3. Kies bij framework voor **Next.js** als Vercel dat vraagt.
 4. Laat de build command op de standaardinstelling staan, of gebruik:
 
@@ -25,7 +25,7 @@ SUPABASE_URL=https://jouw-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=...
 SUPABASE_STORAGE_BUCKET=helder
 RESEND_API_KEY=...
-RESEND_FROM_EMAIL=Helder <noreply@jouwdomein.nl>
+RESEND_FROM_EMAIL=Rekenrust <noreply@jouwdomein.nl>
 ```
 
 Niet invullen op Vercel:
@@ -62,6 +62,6 @@ Doe de eerste test zonder echte klantgegevens:
 
 ## 5. PDF-downloads
 
-Helder maakt PDF’s nu met een ingebouwde PDF-generator die binnen Next.js/Node draait. Daardoor is er online geen aparte Python-installatie of `reportlab` meer nodig.
+Rekenrust maakt PDF’s nu met een ingebouwde PDF-generator die binnen Next.js/Node draait. Daardoor is er online geen aparte Python-installatie of `reportlab` meer nodig.
 
 Voor echte livegang moet minimaal één factuur-PDF en één rapport-PDF succesvol online zijn getest.
