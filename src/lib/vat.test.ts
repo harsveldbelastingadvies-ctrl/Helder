@@ -58,7 +58,7 @@ describe("btw-overzicht", () => {
     const text = pdf.toString("binary");
     expect(text.startsWith("%PDF-")).toBe(true);
     expect(text.endsWith("%%EOF")).toBe(true);
-    expect(text).toContain("Kosten exclusief btw");
+    expect(text).toContain("KOSTEN EXCLUSIEF BTW");
     expect(text).toContain("Adobe");
   });
 });
