@@ -37,10 +37,10 @@ function toInvoice(row: InvoiceRow, customerName: string) {
 async function nextInvoiceId(userId: string, issueDate: string) {
   const year = issueDate.slice(0, 4);
   if (usesSupabaseStorage()) {
-    const rows = await supabaseSelect<{ id: string }>("invoices", { select: "id", filters: { user_id: userId } });
+    const rows = await supabaseSelect<{ id: string }>("invoices", { select: "id" });
     const latest = rows
       .map((row) => row.id)
-      .filter((id) => id.startsWith(`${year}-`))
+      .filter((id) => new RegExp(`^${year}-\\d{4}$`).test(id))
       .sort((a, b) => b.localeCompare(a))[0];
     const nextNumber = latest ? Number(latest.split("-")[1]) + 1 : 1;
     return `${year}-${String(nextNumber).padStart(4, "0")}`;
@@ -147,12 +147,20 @@ async function createInvoice(request: Request) {
   } }, { status: 201 });
 }
 
+function invoiceSaveError(caught: unknown) {
+  if (!(caught instanceof Error)) return "De factuur kon niet worden opgeslagen.";
+  if (caught.message.includes("duplicate key") || caught.message.includes("23505")) {
+    return "Dit factuurnummer bestaat al. Probeer de factuur nog één keer op te slaan; Helder kiest dan automatisch het volgende nummer.";
+  }
+  return caught.message;
+}
+
 export async function POST(request: Request) {
   try {
     return await createInvoice(request);
   } catch (caught) {
     return NextResponse.json({
-      error: caught instanceof Error ? caught.message : "De factuur kon niet worden opgeslagen.",
+      error: invoiceSaveError(caught),
     }, { status: 500 });
   }
 }
