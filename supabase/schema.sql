@@ -18,6 +18,10 @@ create table if not exists users (
   default_vat_rate integer not null default 21 check (default_vat_rate in (0, 9, 21)),
   invoice_footer text not null default 'Bedankt voor de fijne samenwerking.',
   invoice_logo text not null default '',
+  plan_type text not null default 'basis' check (plan_type in ('basis', 'dga', 'begeleiding')),
+  subscription_status text not null default 'trialing' check (subscription_status in ('trialing', 'active', 'past_due', 'canceled')),
+  trial_started_at timestamptz,
+  trial_ends_at timestamptz,
   email_verified_at timestamptz,
   email_verification_token_hash text,
   email_verification_expires_at bigint,
@@ -119,4 +123,8 @@ on conflict (id) do nothing;
 
 alter table users add column if not exists invoice_logo text not null default '';
 alter table users add column if not exists company_type text not null default 'sole_proprietor';
+alter table users add column if not exists plan_type text not null default 'basis';
+alter table users add column if not exists subscription_status text not null default 'trialing';
+alter table users add column if not exists trial_started_at timestamptz;
+alter table users add column if not exists trial_ends_at timestamptz;
 alter table invoices add column if not exists invoice_footer text not null default 'Bedankt voor de fijne samenwerking.';

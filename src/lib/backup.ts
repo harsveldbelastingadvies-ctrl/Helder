@@ -20,6 +20,10 @@ type CompanyRow = {
   defaultVatRate: number;
   invoiceFooter: string;
   invoiceLogo: string;
+  planType: string;
+  subscriptionStatus: string;
+  trialStartedAt: string | null;
+  trialEndsAt: string | null;
   createdAt: string;
 };
 
@@ -69,6 +73,16 @@ function validInvoiceStatus(value: unknown) {
 function validCompanyType(value: unknown) {
   const type = text(value, "sole_proprietor");
   return ["sole_proprietor", "bv_dga", "other"].includes(type) ? type : "sole_proprietor";
+}
+
+function validPlanType(value: unknown) {
+  const type = text(value, "basis");
+  return ["basis", "dga", "begeleiding"].includes(type) ? type : "basis";
+}
+
+function validSubscriptionStatus(value: unknown) {
+  const status = text(value, "trialing");
+  return ["trialing", "active", "past_due", "canceled"].includes(status) ? status : "trialing";
 }
 
 function publicExpense(expense: Record<string, unknown>) {
@@ -138,7 +152,9 @@ async function getLocalAdministrationBackup(userId: string) {
   const company = db.prepare(`SELECT id, name, email, company_name AS companyName, company_type AS companyType, street,
     postal_code AS postalCode, city, kvk_number AS kvkNumber, vat_number AS vatNumber,
     iban, invoice_payment_term AS invoicePaymentTerm, default_vat_rate AS defaultVatRate,
-    invoice_footer AS invoiceFooter, invoice_logo AS invoiceLogo, created_at AS createdAt FROM users WHERE id = ?`).get(userId) as CompanyRow;
+    invoice_footer AS invoiceFooter, invoice_logo AS invoiceLogo, plan_type AS planType,
+    subscription_status AS subscriptionStatus, trial_started_at AS trialStartedAt, trial_ends_at AS trialEndsAt,
+    created_at AS createdAt FROM users WHERE id = ?`).get(userId) as CompanyRow;
 
   const customers = db.prepare(`SELECT id, name, contact, email, street, postal_code AS postalCode,
     city, revenue_cents AS revenueCents, initials, color, created_at AS createdAt
@@ -176,9 +192,9 @@ async function getSupabaseAdministrationBackup(userId: string) {
     supabaseSingle<{
       id: string; name: string; email: string; company_name: string; company_type: string; street: string; postal_code: string; city: string;
       kvk_number: string; vat_number: string; iban: string; invoice_payment_term: number; default_vat_rate: number;
-      invoice_footer: string; invoice_logo: string; created_at: string;
+      invoice_footer: string; invoice_logo: string; plan_type: string; subscription_status: string; trial_started_at: string | null; trial_ends_at: string | null; created_at: string;
     }>("users", {
-      select: "id,name,email,company_name,company_type,street,postal_code,city,kvk_number,vat_number,iban,invoice_payment_term,default_vat_rate,invoice_footer,invoice_logo,created_at",
+      select: "id,name,email,company_name,company_type,street,postal_code,city,kvk_number,vat_number,iban,invoice_payment_term,default_vat_rate,invoice_footer,invoice_logo,plan_type,subscription_status,trial_started_at,trial_ends_at,created_at",
       filters: { id: userId },
     }),
     supabaseSelect<{
@@ -245,6 +261,10 @@ async function getSupabaseAdministrationBackup(userId: string) {
       defaultVatRate: company.default_vat_rate,
       invoiceFooter: company.invoice_footer,
       invoiceLogo: company.invoice_logo,
+      planType: company.plan_type,
+      subscriptionStatus: company.subscription_status,
+      trialStartedAt: company.trial_started_at,
+      trialEndsAt: company.trial_ends_at,
       createdAt: company.created_at,
     } : null,
     customers: customers.map((customer) => ({
@@ -390,7 +410,8 @@ async function restoreLocalAdministrationBackup(userId: string, backup: BackupPa
     const company = backup.company;
     if (company) {
       db.prepare(`UPDATE users SET name = ?, email = ?, company_name = ?, company_type = ?, street = ?, postal_code = ?, city = ?,
-        kvk_number = ?, vat_number = ?, iban = ?, invoice_payment_term = ?, default_vat_rate = ?, invoice_footer = ?, invoice_logo = ?
+        kvk_number = ?, vat_number = ?, iban = ?, invoice_payment_term = ?, default_vat_rate = ?, invoice_footer = ?, invoice_logo = ?,
+        plan_type = ?, subscription_status = ?, trial_started_at = ?, trial_ends_at = ?
         WHERE id = ?`)
         .run(
           text(company.name, "Ondernemer"),
@@ -407,6 +428,10 @@ async function restoreLocalAdministrationBackup(userId: string, backup: BackupPa
           [0, 9, 21].includes(number(company.defaultVatRate, 21)) ? company.defaultVatRate : 21,
           text(company.invoiceFooter, "Bedankt voor de fijne samenwerking.").slice(0, 240),
           text(company.invoiceLogo),
+          validPlanType(company.planType),
+          validSubscriptionStatus(company.subscriptionStatus),
+          text(company.trialStartedAt) || null,
+          text(company.trialEndsAt) || null,
           userId,
         );
     }
@@ -509,6 +534,10 @@ async function restoreSupabaseAdministrationBackup(userId: string, backup: Backu
       default_vat_rate: [0, 9, 21].includes(number(company.defaultVatRate, 21)) ? number(company.defaultVatRate, 21) : 21,
       invoice_footer: text(company.invoiceFooter, "Bedankt voor de fijne samenwerking.").slice(0, 240),
       invoice_logo: text(company.invoiceLogo),
+      plan_type: validPlanType(company.planType),
+      subscription_status: validSubscriptionStatus(company.subscriptionStatus),
+      trial_started_at: text(company.trialStartedAt) || null,
+      trial_ends_at: text(company.trialEndsAt) || null,
     });
   }
 
