@@ -95,7 +95,7 @@ class VatPdfBuilder {
     if (this.commands.length) this.pages.push(this.commands);
     this.commands = [];
     this.y = pageHeight - margin;
-    this.text("helder", margin, this.y, 15, "bold", green);
+    this.text("rekenrust", margin, this.y, 15, "bold", green);
     this.text(this.title.toUpperCase(), pageWidth - margin, this.y, 18, "bold", dark, "right");
     this.text(this.period, pageWidth - margin, this.y - 18, 9, "regular", muted, "right");
     this.line(this.y - 29);
@@ -245,7 +245,7 @@ function renderPdf(pages: string[][]) {
     pageRefs.push(`${pageId} 0 R`);
     const footerCommands = [
       ...commands,
-      `BT /F1 7 Tf 0.58 0.62 0.60 rg ${margin} 28 Td (Gemaakt met Helder - concept btw-overzicht) Tj ET`,
+      `BT /F1 7 Tf 0.58 0.62 0.60 rg ${margin} 28 Td (Gemaakt met Rekenrust - concept btw-overzicht) Tj ET`,
       `BT /F1 7 Tf 0.58 0.62 0.60 rg ${pageWidth - margin - 45} 28 Td (Pagina ${index + 1}) Tj ET`,
     ];
     const stream = footerCommands.join("\n");
@@ -281,8 +281,8 @@ export function generateVatPdf(exportData: VatExport) {
     resultLabel,
     resultAmount,
     exportData.summary.payableVatCents >= 0
-      ? "Dit is het bedrag dat je volgens Helder moet afdragen: btw op verkoopfacturen min btw op kosten."
-      : "Je hebt volgens Helder meer btw betaald op kosten dan ontvangen op verkoopfacturen.",
+      ? "Dit is het bedrag dat je volgens Rekenrust moet afdragen: btw op verkoopfacturen min btw op kosten."
+      : "Je hebt volgens Rekenrust meer btw betaald op kosten dan ontvangen op verkoopfacturen.",
   );
 
   pdf.summaryCards([

@@ -27,7 +27,7 @@ export async function GET() {
       database: "bereikbaar",
       fileStorage: "lokale computer",
       configured: true,
-      message: "Helder gebruikt lokale opslag op deze computer. Dat is prima voor bouwen en testen.",
+      message: "Rekenrust gebruikt lokale opslag op deze computer. Dat is prima voor bouwen en testen.",
       checkedAt: new Date().toISOString(),
     });
   } catch {

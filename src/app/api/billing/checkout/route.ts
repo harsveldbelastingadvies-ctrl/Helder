@@ -101,7 +101,7 @@ export async function POST(request: Request) {
       }
       if (previousPayment.status === "paid" || previousPayment.status === "authorized") {
         return NextResponse.json({
-          error: "Mollie heeft de vorige betaling al ontvangen. Controleer de abonnementsstatus of ververs Helder even.",
+          error: "Mollie heeft de vorige betaling al ontvangen. Controleer de abonnementsstatus of ververs Rekenrust even.",
         }, { status: 409 });
       }
       if (paymentCanBeReused(previousPayment.status)) {
@@ -127,13 +127,13 @@ export async function POST(request: Request) {
     const payment = await createMollieFirstPayment({
       customerId: mollieCustomerId,
       amountCents: plan.monthlyPriceCents,
-      description: `Helder ${plan.name} - eerste maand`,
+      description: `Rekenrust ${plan.name} - eerste maand`,
       redirectUrl: `${appUrl}/?betaling=terug`,
       webhookUrl: isLocalUrl(appUrl) ? undefined : `${appUrl}/api/billing/mollie/webhook`,
       metadata: {
         userId: sessionUser.id,
         planType: plan.id,
-        product: "Helder",
+        product: "Rekenrust",
       },
     });
 

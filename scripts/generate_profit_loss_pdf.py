@@ -156,7 +156,7 @@ def create_pdf(summary):
     page.drawString(36, height - 158, "Antwoord in het kort")
     page.setFillColor(muted)
     page.setFont("Helvetica", 9)
-    page.drawString(36, height - 178, f'Voor {summary["year"]} toont Helder je omzet, kosten, afschrijvingen en resultaat.')
+    page.drawString(36, height - 178, f'Voor {summary["year"]} toont Rekenrust je omzet, kosten, afschrijvingen en resultaat.')
 
     page.setFillColor(green_dark if profit >= 0 else HexColor("#9A4C43"))
     page.roundRect(36, height - 288, width - 72, 82, 10, fill=1, stroke=0)
@@ -181,7 +181,7 @@ def create_pdf(summary):
     page.roundRect(36, height - 525, width - 72, 96, 9, fill=1, stroke=1)
     page.setFillColor(dark)
     page.setFont("Helvetica-Bold", 12)
-    page.drawString(56, height - 456, "Hoe leest Helder afschrijvingen?")
+    page.drawString(56, height - 456, "Hoe leest Rekenrust afschrijvingen?")
     page.setFillColor(muted)
     page.setFont("Helvetica", 8)
     page.drawString(56, height - 477, "1. Gewone kosten tellen direct mee in dit jaar.")

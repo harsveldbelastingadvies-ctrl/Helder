@@ -279,8 +279,8 @@ class InvoicePdf {
     }
 
     this.rect(x, top - 36, 34, 34, green);
-    this.text("h", x + 17, top - 25, 22, "italic", "1 1 1", "center");
-    this.text("helder", x + 45, top - 25, 17, "bold", dark);
+    this.text("r", x + 17, top - 25, 22, "italic", "1 1 1", "center");
+    this.text("rekenrust", x + 45, top - 25, 17, "bold", dark);
   }
 
   private startPage() {
@@ -463,7 +463,7 @@ function renderPdf(pages: string[][], logoImage: PdfImage | null) {
 
     const footer = [
       ...commands,
-      `BT /F1 7 Tf 0.58 0.62 0.60 rg ${pageWidth / 2 - 105} 38 Td (Gemaakt met Helder - administratie zonder omwegen) Tj ET`,
+      `BT /F1 7 Tf 0.58 0.62 0.60 rg ${pageWidth / 2 - 105} 38 Td (Gemaakt met Rekenrust - administratie zonder omwegen) Tj ET`,
       `BT /F1 7 Tf 0.58 0.62 0.60 rg ${pageWidth - margin - 45} 38 Td (Pagina ${index + 1}) Tj ET`,
     ];
     const stream = footer.join("\n");

@@ -10,7 +10,7 @@ export async function GET() {
   const backup = await getAdministrationBackup(user.id);
   const date = new Date().toISOString().slice(0, 10);
   const safeCompany = user.companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "administratie";
-  const filename = `helder-backup-${safeCompany}-${date}.json`;
+  const filename = `rekenrust-backup-${safeCompany}-${date}.json`;
 
   return new Response(JSON.stringify(backup, null, 2), {
     headers: {

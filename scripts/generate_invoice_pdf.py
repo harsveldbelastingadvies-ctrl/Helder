@@ -216,7 +216,7 @@ def create_pdf(invoice):
         draw_wrapped(page, footer, 56, 76, "Helvetica", 8, muted, width - 112, 9, 2)
     page.setFillColor(HexColor("#939C98"))
     page.setFont("Helvetica", 7)
-    page.drawCentredString(width / 2, 38, "Gemaakt met Helder - administratie zonder omwegen")
+    page.drawCentredString(width / 2, 38, "Gemaakt met Rekenrust - administratie zonder omwegen")
     page.save()
     return output.getvalue()
 

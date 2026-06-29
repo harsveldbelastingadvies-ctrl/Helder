@@ -46,7 +46,7 @@ export async function GET() {
       ? supabaseOk
         ? "Supabase is bereikbaar voor database en bonnenopslag."
         : "Supabase staat aan, maar is nog niet volledig bereikbaar."
-      : "Helder gebruikt nu lokale opslag. Prima voor testen, niet voor livegang.",
+      : "Rekenrust gebruikt nu lokale opslag. Prima voor testen, niet voor livegang.",
     action: usesSupabaseStorage()
       ? supabaseOk
         ? "Geen actie nodig. Test straks nog wel klant, factuur, kosten en bon uploaden in de online omgeving."
@@ -73,7 +73,7 @@ export async function GET() {
     detail: usesOnlineEmail() && resendConfigured
       ? "Resend is ingesteld voor e-mailbevestiging en wachtwoordherstel."
       : resendConfigured
-        ? "Resend is ingevuld, maar Helder draait nog in lokale modus."
+        ? "Resend is ingevuld, maar Rekenrust draait nog in lokale modus."
         : "Vul Resend in voor e-mailbevestiging en wachtwoordherstel.",
     action: usesOnlineEmail() && resendConfigured
       ? "Geen actie nodig. Test straks wel wachtwoordherstel en e-mailbevestiging met een echt e-mailadres."
@@ -149,8 +149,8 @@ export async function GET() {
       storageMode,
       checkedAt: new Date().toISOString(),
       message: ok
-        ? "Helder staat technisch klaar voor een besloten online pilot."
-        : "Helder is nog niet helemaal klaar voor livegang. Rond eerst de aandachtspunten af.",
+        ? "Rekenrust staat technisch klaar voor een besloten online pilot."
+        : "Rekenrust is nog niet helemaal klaar voor livegang. Rond eerst de aandachtspunten af.",
       nextAction: items.find((item) => !item.ok)?.action ?? "Start een besloten online pilot en test de volledige flow met een testaccount.",
       items,
     },

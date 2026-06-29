@@ -102,7 +102,7 @@ async function ensureMonthlySubscription(input: { request: Request; user: Billin
   const subscription = await createMollieSubscription({
     customerId,
     amountCents: plan.monthlyPriceCents,
-    description: `Helder ${plan.name} - maandabonnement`,
+    description: `Rekenrust ${plan.name} - maandabonnement`,
     webhookUrl: `${appUrl}/api/billing/mollie/webhook`,
     startDate: nextMonthStartDate(),
   });

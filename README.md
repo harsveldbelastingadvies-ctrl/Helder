@@ -1,6 +1,6 @@
-# Helder administratie
+# Rekenrust administratie
 
-Helder is een eerste werkende versie van een eenvoudige administratie-app voor kleine ondernemers.
+Rekenrust is een eerste werkende versie van een eenvoudige administratie-app voor kleine ondernemers.
 
 ## Snel openen
 
@@ -8,11 +8,11 @@ De makkelijkste manier:
 
 1. Open Finder.
 2. Ga naar deze map: `/Users/ralf/Documents/Codex/2026-06-21/maa`
-3. Klik met de rechtermuisknop op `Open Helder.command`.
+3. Klik met de rechtermuisknop op `Open Rekenrust.command`.
 4. Kies **Open**.
-5. Laat het Terminal-venster openstaan zolang je Helder gebruikt.
+5. Laat het Terminal-venster openstaan zolang je Rekenrust gebruikt.
 
-Daarna opent Helder op [http://127.0.0.1:3000](http://127.0.0.1:3000).
+Daarna opent Rekenrust op [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 Stoppen kan met `Control + C` in het Terminal-venster.
 
@@ -54,7 +54,7 @@ De app draait lokaal op [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 Gebruik voor de demoversie:
 
-- E-mailadres: `demo@helder.nl`
+- E-mailadres: `demo@rekenrust.nl`
 - Wachtwoord: `Welkom123!`
 
 Deze gegevens worden bewust niet automatisch ingevuld, zodat je minder snel per ongeluk in het demo-account werkt.

@@ -29,8 +29,8 @@ export async function POST(request: Request) {
 
     const emailResult = await sendAccountEmail({
       to: email,
-      subject: "Je herstelcode voor Helder",
-      text: `Je herstelcode voor Helder is: ${recoveryCode}\n\nDeze code is 30 minuten geldig. Heb je dit niet aangevraagd? Dan kun je deze e-mail negeren.`,
+      subject: "Je herstelcode voor Rekenrust",
+      text: `Je herstelcode voor Rekenrust is: ${recoveryCode}\n\nDeze code is 30 minuten geldig. Heb je dit niet aangevraagd? Dan kun je deze e-mail negeren.`,
     });
 
     if (usesOnlineEmail() && !emailResult.sent) {

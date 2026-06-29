@@ -24,8 +24,8 @@ export async function POST() {
 
   const emailResult = await sendAccountEmail({
     to: user.email,
-    subject: "Bevestig je e-mailadres voor Helder",
-    text: `Hallo ${user.name},\n\nJe bevestigingscode voor Helder is: ${verificationCode}\n\nDeze code is 60 minuten geldig.`,
+    subject: "Bevestig je e-mailadres voor Rekenrust",
+    text: `Hallo ${user.name},\n\nJe bevestigingscode voor Rekenrust is: ${verificationCode}\n\nDeze code is 60 minuten geldig.`,
   });
 
   if (usesOnlineEmail() && !emailResult.sent) {

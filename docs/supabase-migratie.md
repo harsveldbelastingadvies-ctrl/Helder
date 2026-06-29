@@ -1,6 +1,6 @@
-# Supabase-migratie Helder
+# Supabase-migratie Rekenrust
 
-Doel: Helder verplaatsen van lokale opslag naar Supabase, zodat de app geschikt wordt voor echte online hosting.
+Doel: Rekenrust verplaatsen van lokale opslag naar Supabase, zodat de app geschikt wordt voor echte online hosting.
 
 ## Stand van zaken
 

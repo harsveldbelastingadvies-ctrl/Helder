@@ -218,7 +218,7 @@ function ensureInvoiceColumns(database: DatabaseInstance) {
 function seedDemoData(database: DatabaseInstance) {
   const seed = database.transaction(() => {
     database.prepare("INSERT OR IGNORE INTO users (id, name, email, password_hash, company_name) VALUES (?, ?, ?, ?, ?)")
-      .run("user-demo", "Ralf", "demo@helder.nl", hashPassword("Welkom123!"), "Ralf Bureau");
+      .run("user-demo", "Ralf", "demo@rekenrust.nl", hashPassword("Welkom123!"), "Ralf Bureau");
     database.prepare(`UPDATE users SET
       street = CASE WHEN street = '' THEN 'Keizersgracht 123' ELSE street END,
       postal_code = CASE WHEN postal_code = '' THEN '1015 CJ' ELSE postal_code END,

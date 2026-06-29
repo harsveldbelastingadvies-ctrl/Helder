@@ -1,4 +1,4 @@
--- Helder Supabase schema
+-- Rekenrust Supabase schema
 -- Voer dit uit in Supabase SQL Editor voordat HELDER_STORAGE=supabase online wordt gebruikt.
 
 create table if not exists users (

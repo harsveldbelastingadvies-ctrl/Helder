@@ -60,7 +60,7 @@ class PdfBuilder {
   private commands: string[] = [];
   private y = pageHeight - margin;
 
-  constructor(private title: string, private footer = "Gemaakt met Helder") {
+  constructor(private title: string, private footer = "Gemaakt met Rekenrust") {
     this.newPage();
   }
 
@@ -68,7 +68,7 @@ class PdfBuilder {
     if (this.commands.length) this.pages.push(this.commands);
     this.commands = [];
     this.y = pageHeight - margin;
-    this.text("helder", margin, this.y, 15, "bold", "0.08 0.36 0.30");
+    this.text("rekenrust", margin, this.y, 15, "bold", "0.08 0.36 0.30");
     this.text(this.title.toUpperCase(), pageWidth - margin, this.y, 17, "bold", "0.09 0.13 0.12", "right");
     this.line(this.y - 18);
     this.y -= 48;

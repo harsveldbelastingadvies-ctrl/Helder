@@ -13,7 +13,7 @@ export function generateEntrepreneurReportPdf(report: EntrepreneurReport) {
   return createSimplePdf({
     title: `Ondernemersrapport ${report.year}`,
     subtitle: `${report.companyName} · gemaakt op ${dateNl(report.createdAt)}`,
-    footer: "Gemaakt met Helder - concept ondernemersrapport",
+    footer: "Gemaakt met Rekenrust - concept ondernemersrapport",
     sections: [
       {
         title: "Belangrijkste cijfers",

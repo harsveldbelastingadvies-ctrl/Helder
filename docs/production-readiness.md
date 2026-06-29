@@ -1,6 +1,6 @@
-# Productievoorbereiding Helder
+# Productievoorbereiding Rekenrust
 
-Helder werkt nu lokaal goed, maar voor echte ondernemersgegevens zijn nog een paar veiligheidsstappen nodig.
+Rekenrust werkt nu lokaal goed, maar voor echte ondernemersgegevens zijn nog een paar veiligheidsstappen nodig.
 
 ## Korte inschatting
 
@@ -42,7 +42,7 @@ De basisfuncties zijn al ver: facturen, kosten, btw, winst- en verliesrekening, 
 
 ### Stap 1: besloten testomgeving
 
-Doel: Helder online kunnen openen zonder echte klantgegevens.
+Doel: Rekenrust online kunnen openen zonder echte klantgegevens.
 
 - Kies hosting.
 - Zet de app online achter HTTPS.
@@ -77,12 +77,12 @@ Doel: verantwoord ondernemersgegevens verwerken.
 - Online hoort `HELDER_LOCAL=false` of leeg te zijn, zodat cookies extra veilig worden ingesteld.
 - Lokale testcodes voor e-mailbevestiging en wachtwoordherstel mogen online niet zichtbaar zijn.
 - Back-ups zijn pas echt nuttig als ook is getest dat terugzetten werkt.
-- De handmatige Helder-back-up neemt bonbestanden mee. Voor livegang blijft daarnaast een automatische Supabase Storage back-up verstandig.
+- De handmatige Rekenrust-back-up neemt bonbestanden mee. Voor livegang blijft daarnaast een automatische Supabase Storage back-up verstandig.
 - Logbestanden mogen helpen bij fouten zoeken, maar mogen geen gevoelige administratiegegevens bevatten.
 
 ## Gezondheidscheck
 
-Als Helder later online draait, kan een hostingplatform of monitor `/api/health` openen. De route geeft alleen terug of de app draait, of de database bereikbaar is en of de bestandsopslag voor bonnetjes bereikbaar is. Er worden geen klantgegevens getoond.
+Als Rekenrust later online draait, kan een hostingplatform of monitor `/api/health` openen. De route geeft alleen terug of de app draait, of de database bereikbaar is en of de bestandsopslag voor bonnetjes bereikbaar is. Er worden geen klantgegevens getoond.
 
 ## Livegang-check
 
@@ -96,7 +96,7 @@ In **Instellingen** staat een livegang-check. Die controleert in gewone taal of 
 - back-up en herstel beschikbaar.
 - PDF-downloads beschikbaar.
 
-Als een punt nog niet klaar is, toont Helder ook de eerstvolgende actie. Bijvoorbeeld:
+Als een punt nog niet klaar is, toont Rekenrust ook de eerstvolgende actie. Bijvoorbeeld:
 
 - zet in Vercel `HELDER_STORAGE` op `supabase`;
 - vul in Vercel `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` en `SUPABASE_STORAGE_BUCKET` in;
@@ -121,7 +121,7 @@ In **Instellingen** staat bij Back-up een controleknop. Die maakt geen wijziging
 - genoemde bonbestanden daadwerkelijk aanwezig in de back-up;
 - geen wachtwoord-, sessie- of tokenvelden in het exportbestand.
 
-Belangrijk: bonbestanden zitten nu in de handmatige Helder-back-up. Omdat bonnen groot kunnen zijn, kan het back-upbestand ook groter worden. Voor livegang moet Supabase Storage daarnaast automatisch worden geback-upt, zodat herstel niet afhankelijk is van handmatig downloaden.
+Belangrijk: bonbestanden zitten nu in de handmatige Rekenrust-back-up. Omdat bonnen groot kunnen zijn, kan het back-upbestand ook groter worden. Voor livegang moet Supabase Storage daarnaast automatisch worden geback-upt, zodat herstel niet afhankelijk is van handmatig downloaden.
 
 ## Voorbeeldinstellingen voor later
 
@@ -130,7 +130,7 @@ HELDER_DATA_DIR=/secure/path/helder-data
 HELDER_SEED_DEMO=false
 HELDER_LOCAL=false
 RESEND_API_KEY=...
-RESEND_FROM_EMAIL=Helder <noreply@jouwdomein.nl>
+RESEND_FROM_EMAIL=Rekenrust <noreply@jouwdomein.nl>
 SUPABASE_URL=https://jouw-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=...
 SUPABASE_STORAGE_BUCKET=helder

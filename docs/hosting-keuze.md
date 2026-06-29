@@ -1,16 +1,16 @@
-# Hostingkeuze Helder
+# Hostingkeuze Rekenrust
 
 We kiezen voor de serieuze route: **Vercel + Supabase + Resend**.
 
 ## Waarom deze combinatie?
 
-- **Vercel** is sterk voor Next.js-apps zoals Helder. Het regelt de website, deployments, HTTPS en domeinkoppeling.
+- **Vercel** is sterk voor Next.js-apps zoals Rekenrust. Het regelt de website, deployments, HTTPS en domeinkoppeling.
 - **Supabase** is geschikt voor de online database en opslag van bonnetjes/bestanden.
 - **Resend** is geschikt voor transactionele e-mail, zoals e-mailbevestiging en wachtwoordherstel.
 
 ## Wat is nu al voorbereid?
 
-- Helder kan lokaal blijven draaien zoals nu.
+- Rekenrust kan lokaal blijven draaien zoals nu.
 - Online testcodes worden niet meer op het scherm getoond wanneer `HELDER_LOCAL` niet op `true` staat.
 - Resend is voorbereid voor e-mailbevestiging en wachtwoordherstel.
 - De benodigde omgevingsvariabelen staan in `.env.example`.
@@ -23,7 +23,7 @@ We kiezen voor de serieuze route: **Vercel + Supabase + Resend**.
 ### 1. Vercel
 
 - Vercel-account aanmaken.
-- Project koppelen aan de Helder-code.
+- Project koppelen aan de Rekenrust-code.
 - Domein koppelen zodra je een domeinnaam hebt gekozen.
 - Online omgevingsvariabelen invullen.
 

@@ -8,7 +8,7 @@ export function generateProfitLossPdf(summary: ProfitLossSummary) {
   return createSimplePdf({
     title: `Concept winst en verlies ${summary.year}`,
     subtitle: "Conceptoverzicht voor je administratie. Controleer dit met je boekhouder of adviseur.",
-    footer: "Gemaakt met Helder - concept winst en verlies",
+    footer: "Gemaakt met Rekenrust - concept winst en verlies",
     sections: [
       {
         title: "Samenvatting",

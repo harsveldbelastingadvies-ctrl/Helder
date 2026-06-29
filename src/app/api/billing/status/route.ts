@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     const subscription = await createMollieSubscription({
       customerId: current.mollieCustomerId,
       amountCents: plan.monthlyPriceCents,
-      description: `Helder ${plan.name} - maandabonnement`,
+      description: `Rekenrust ${plan.name} - maandabonnement`,
       webhookUrl: `${appUrl}/api/billing/mollie/webhook`,
       startDate: nextMonthStartDate(),
     });

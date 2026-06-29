@@ -150,7 +150,7 @@ async function createInvoice(request: Request) {
 function invoiceSaveError(caught: unknown) {
   if (!(caught instanceof Error)) return "De factuur kon niet worden opgeslagen.";
   if (caught.message.includes("duplicate key") || caught.message.includes("23505")) {
-    return "Dit factuurnummer bestaat al. Probeer de factuur nog één keer op te slaan; Helder kiest dan automatisch het volgende nummer.";
+    return "Dit factuurnummer bestaat al. Probeer de factuur nog één keer op te slaan; Rekenrust kiest dan automatisch het volgende nummer.";
   }
   return caught.message;
 }

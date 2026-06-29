@@ -3,7 +3,7 @@ import Link from "next/link";
 const privacySections = [
   {
     title: "Welke gegevens bewaren we?",
-    body: "Helder bewaart gegevens die nodig zijn om de administratie te gebruiken: accountgegevens, bedrijfsgegevens, klanten, facturen, kosten, bonnetjes, CRM-notities en opvolgacties.",
+    body: "Rekenrust bewaart gegevens die nodig zijn om de administratie te gebruiken: accountgegevens, bedrijfsgegevens, klanten, facturen, kosten, bonnetjes, CRM-notities en opvolgacties.",
   },
   {
     title: "Waar gebruiken we die gegevens voor?",
@@ -14,8 +14,8 @@ const privacySections = [
     body: "Gegevens zijn gekoppeld aan het account waarmee je bent ingelogd. De administratie is bedoeld voor de ondernemer zelf en wordt niet zichtbaar gemaakt voor andere gebruikers.",
   },
   {
-    title: "Welke diensten helpen Helder draaien?",
-    body: "Voor online gebruik kan Helder diensten gebruiken zoals Vercel voor hosting, Supabase voor database en bonnenopslag, Resend voor e-mail en Mollie voor betalingen. Deze diensten verwerken alleen gegevens voor het doel waarvoor ze nodig zijn.",
+    title: "Welke diensten helpen Rekenrust draaien?",
+    body: "Voor online gebruik kan Rekenrust diensten gebruiken zoals Vercel voor hosting, Supabase voor database en bonnenopslag, Resend voor e-mail en Mollie voor betalingen. Deze diensten verwerken alleen gegevens voor het doel waarvoor ze nodig zijn.",
   },
   {
     title: "Wat kun je zelf regelen?",
@@ -27,7 +27,7 @@ const privacySections = [
   },
   {
     title: "Betalingen en abonnementen",
-    body: "Betalingen lopen via Mollie. Helder bewaart geen volledige betaalgegevens zoals bankinloggegevens. Wel bewaren we noodzakelijke betalingskenmerken, zodat het abonnement kan worden geactiveerd en gecontroleerd.",
+    body: "Betalingen lopen via Mollie. Rekenrust bewaart geen volledige betaalgegevens zoals bankinloggegevens. Wel bewaren we noodzakelijke betalingskenmerken, zodat het abonnement kan worden geactiveerd en gecontroleerd.",
   },
   {
     title: "Vragen of correcties",
@@ -39,9 +39,9 @@ export default function PrivacyPage() {
   return (
     <main className="privacy-page">
       <section className="privacy-document">
-        <Link className="privacy-back" href="/">← Terug naar Helder</Link>
+        <Link className="privacy-back" href="/">← Terug naar Rekenrust</Link>
         <p className="eyebrow">PRIVACYVERKLARING</p>
-        <h1>Zo gaat Helder om met privacy en gegevensbeheer</h1>
+        <h1>Zo gaat Rekenrust om met privacy en gegevensbeheer</h1>
         <p className="privacy-lead">
           We willen dat ondernemers snappen welke gegevens worden bewaard en waarom.
           Daarom leggen we het hieronder uit in gewone taal.
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
           <strong>Belangrijk om te weten</strong>
           <span>
             Dit is een duidelijke werkversie in gewone taal. Laat de definitieve juridische
-            privacyverklaring controleren voordat Helder breed aan ondernemers wordt aangeboden.
+            privacyverklaring controleren voordat Rekenrust breed aan ondernemers wordt aangeboden.
           </span>
         </div>
 
@@ -66,7 +66,7 @@ export default function PrivacyPage() {
 
         <footer className="privacy-footer">
           <p>
-            Laatst bijgewerkt: 29 juni 2026. Deze pagina hoort bij Helder van R. Harsveld Belastingadvies.
+            Laatst bijgewerkt: 29 juni 2026. Deze pagina hoort bij Rekenrust van R. Harsveld Belastingadvies.
           </p>
         </footer>
       </section>

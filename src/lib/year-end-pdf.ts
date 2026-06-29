@@ -9,7 +9,7 @@ export function generateYearEndPdf(summary: YearEndSummary) {
   return createSimplePdf({
     title: `Concept jaarcheck ${summary.year}`,
     subtitle: "Praktische controlelijst voor het einde van het jaar. Dit is geen definitieve belastingaangifte.",
-    footer: "Gemaakt met Helder - concept jaarcheck",
+    footer: "Gemaakt met Rekenrust - concept jaarcheck",
     sections: [
       {
         title: "Voortgang",

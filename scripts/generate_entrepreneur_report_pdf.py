@@ -127,7 +127,7 @@ def create_pdf(report):
 
     page.setFillColor(HexColor("#939C98"))
     page.setFont("Helvetica", 7)
-    page.drawCentredString(width / 2, 38, "Gemaakt met Helder - concept ondernemersrapport")
+    page.drawCentredString(width / 2, 38, "Gemaakt met Rekenrust - concept ondernemersrapport")
     page.save()
     return output.getvalue()
 

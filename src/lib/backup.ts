@@ -311,7 +311,7 @@ export async function getAdministrationBackup(userId: string) {
   const payload = usesSupabaseStorage() ? await getSupabaseAdministrationBackup(userId) : await getLocalAdministrationBackup(userId);
   return {
     exportInfo: {
-      product: "Helder",
+      product: "Rekenrust",
       version: 1,
       createdAt: new Date().toISOString(),
       note: "Deze back-up bevat administratiegegevens, factuurinstellingen en bonbestanden, maar geen wachtwoorden of sessies.",
@@ -415,7 +415,7 @@ async function restoreLocalAdministrationBackup(userId: string, backup: BackupPa
         WHERE id = ?`)
         .run(
           text(company.name, "Ondernemer"),
-          text(company.email, "demo@helder.nl").toLowerCase(),
+          text(company.email, "demo@rekenrust.nl").toLowerCase(),
           text(company.companyName, "Mijn onderneming"),
           validCompanyType(company.companyType),
           text(company.street),
@@ -521,7 +521,7 @@ async function restoreSupabaseAdministrationBackup(userId: string, backup: Backu
   if (company) {
     await supabaseUpdate("users", { id: userId }, {
       name: text(company.name, "Ondernemer"),
-      email: text(company.email, "demo@helder.nl").toLowerCase(),
+      email: text(company.email, "demo@rekenrust.nl").toLowerCase(),
       company_name: text(company.companyName, "Mijn onderneming"),
       company_type: validCompanyType(company.companyType),
       street: text(company.street),
@@ -659,8 +659,10 @@ async function restoreSupabaseAdministrationBackup(userId: string, backup: Backu
 }
 
 export async function restoreAdministrationBackup(userId: string, backup: BackupPayload) {
-  if (backup?.exportInfo?.product !== "Helder" || backup.exportInfo.version !== 1) {
-    throw new Error("Dit lijkt geen geldige Helder-back-up te zijn.");
+  const product = backup?.exportInfo?.product;
+  const supportedProducts = product === "Rekenrust" || product === "Helder";
+  if (!supportedProducts || backup.exportInfo.version !== 1) {
+    throw new Error("Dit lijkt geen geldige Rekenrust-back-up te zijn.");
   }
   if (usesSupabaseStorage()) await restoreSupabaseAdministrationBackup(userId, backup);
   else await restoreLocalAdministrationBackup(userId, backup);
