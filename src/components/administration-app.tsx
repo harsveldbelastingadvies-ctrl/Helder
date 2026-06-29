@@ -158,6 +158,22 @@ export function AdministrationApp() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { void initialize(); }, []);
 
+  useEffect(() => {
+    function updateBillingUser(event: Event) {
+      const billing = (event as CustomEvent<BillingStatusOverview>).detail;
+      if (!billing) return;
+      setUser((currentUser) => currentUser ? {
+        ...currentUser,
+        planType: billing.planType,
+        subscriptionStatus: isSubscriptionStatus(billing.subscriptionStatus) ? billing.subscriptionStatus : currentUser.subscriptionStatus,
+        trialEndsAt: billing.trialEndsAt,
+      } : currentUser);
+    }
+
+    window.addEventListener("helder-billing-updated", updateBillingUser);
+    return () => window.removeEventListener("helder-billing-updated", updateBillingUser);
+  }, []);
+
   async function initialize() {
     try {
       const session = await fetch("/api/auth/session");
@@ -595,11 +611,12 @@ function BillingCheckoutButton({ label = "Pakket activeren" }: { label?: string 
     setLoading(true);
     try {
       const response = await fetch("/api/billing/checkout", { method: "POST" });
-      const data = await response.json() as { checkoutUrl?: string; error?: string };
+      const text = await response.text();
+      const data = text ? JSON.parse(text) as { checkoutUrl?: string; error?: string } : {} as { checkoutUrl?: string; error?: string };
       if (!response.ok || !data.checkoutUrl) throw new Error(data.error ?? "Mollie-betaalpagina kon niet worden geopend.");
       window.location.href = data.checkoutUrl;
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Mollie-betaalpagina kon niet worden geopend.");
+      setError(caught instanceof SyntaxError ? "Mollie-betaalpagina kon niet worden geopend. Controleer of Mollie in Vercel goed is ingesteld." : caught instanceof Error ? caught.message : "Mollie-betaalpagina kon niet worden geopend.");
       setLoading(false);
     }
   }
@@ -1032,8 +1049,10 @@ function BillingStatusCard() {
       if (!response.ok || !data.billing) throw new Error(data.error ?? "Abonnementsstatus kon niet worden geladen.");
       setBilling(data.billing);
       if (data.message) setMessage(data.message);
+      return data.billing;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Abonnementsstatus kon niet worden geladen.");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -1051,7 +1070,8 @@ function BillingStatusCard() {
       });
       const data = await response.json() as { message?: string; error?: string };
       if (!response.ok) throw new Error(data.error ?? "Pakket wijzigen is niet gelukt.");
-      await loadBilling("GET");
+      const updatedBilling = await loadBilling("GET");
+      if (updatedBilling) window.dispatchEvent(new CustomEvent("helder-billing-updated", { detail: updatedBilling }));
       setMessage(data.message ?? "Pakket gewijzigd.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Pakket wijzigen is niet gelukt.");

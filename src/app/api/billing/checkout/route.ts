@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { createMollieCustomer, createMollieFirstPayment, getMolliePayment, getPublicAppUrl, type MolliePayment } from "@/lib/mollie";
+import { createMollieCustomer, createMollieFirstPayment, getMollieApiKey, getMolliePayment, getPublicAppUrl, type MolliePayment } from "@/lib/mollie";
 import { getPlan } from "@/lib/plans";
 import { supabaseSingle, supabaseUpdate, usesSupabaseStorage } from "@/lib/supabase";
 
@@ -85,6 +85,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Je pakket is al actief. Je hoeft niet opnieuw te betalen." }, { status: 409 });
   }
 
+  if (!getMollieApiKey()) {
+    return NextResponse.json({ error: "Mollie is nog niet ingesteld. Vul in Vercel de Mollie API-key in voordat ondernemers kunnen betalen." }, { status: 503 });
+  }
+
   if (mollieLastPaymentId) {
     try {
       const previousPayment = await getMolliePayment(mollieLastPaymentId);
@@ -111,32 +115,38 @@ export async function POST(request: Request) {
     }
   }
 
-  const appUrl = getPublicAppUrl(request);
-  const mollieCustomerId = billingUser.mollie_customer_id ?? billingUser.mollieCustomerId
-    ?? (await createMollieCustomer({
-      name: billingUser.company_name ?? billingUser.companyName ?? billingUser.name,
-      email: billingUser.email,
-    })).id;
+  try {
+    const appUrl = getPublicAppUrl(request);
+    const mollieCustomerId = billingUser.mollie_customer_id ?? billingUser.mollieCustomerId
+      ?? (await createMollieCustomer({
+        name: billingUser.company_name ?? billingUser.companyName ?? billingUser.name,
+        email: billingUser.email,
+      })).id;
 
-  await updateBillingUser(sessionUser.id, { mollieCustomerId });
+    await updateBillingUser(sessionUser.id, { mollieCustomerId });
 
-  const payment = await createMollieFirstPayment({
-    customerId: mollieCustomerId,
-    amountCents: plan.monthlyPriceCents,
-    description: `Helder ${plan.name} - eerste maand`,
-    redirectUrl: `${appUrl}/?betaling=terug`,
-    webhookUrl: isLocalUrl(appUrl) ? undefined : `${appUrl}/api/billing/mollie/webhook`,
-    metadata: {
-      userId: sessionUser.id,
-      planType: plan.id,
-      product: "Helder",
-    },
-  });
+    const payment = await createMollieFirstPayment({
+      customerId: mollieCustomerId,
+      amountCents: plan.monthlyPriceCents,
+      description: `Helder ${plan.name} - eerste maand`,
+      redirectUrl: `${appUrl}/?betaling=terug`,
+      webhookUrl: isLocalUrl(appUrl) ? undefined : `${appUrl}/api/billing/mollie/webhook`,
+      metadata: {
+        userId: sessionUser.id,
+        planType: plan.id,
+        product: "Helder",
+      },
+    });
 
-  await updateBillingUser(sessionUser.id, { mollieLastPaymentId: payment.id });
+    await updateBillingUser(sessionUser.id, { mollieLastPaymentId: payment.id });
 
-  return NextResponse.json({
-    checkoutUrl: payment.checkoutUrl,
-    paymentId: payment.id,
-  });
+    return NextResponse.json({
+      checkoutUrl: payment.checkoutUrl,
+      paymentId: payment.id,
+    });
+  } catch (caught) {
+    return NextResponse.json({
+      error: caught instanceof Error ? caught.message : "Mollie-betaalpagina kon niet worden geopend.",
+    }, { status: 502 });
+  }
 }

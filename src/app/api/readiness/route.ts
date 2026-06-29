@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { usesOnlineEmail } from "@/lib/email";
+import { getMollieApiKey } from "@/lib/mollie";
 import { checkPdfRuntime } from "@/lib/pdf-runtime";
 import { getSupabaseConfig, supabaseHealthCheck, usesSupabaseStorage } from "@/lib/supabase";
 
@@ -21,6 +22,7 @@ export async function GET() {
   const items: ReadinessItem[] = [];
   const supabaseConfig = getSupabaseConfig();
   const resendConfigured = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
+  const mollieConfigured = Boolean(getMollieApiKey());
   const localMode = process.env.HELDER_LOCAL === "true";
   const demoDataOff = process.env.HELDER_SEED_DEMO === "false";
   const storageMode = usesSupabaseStorage() ? "supabase" : "local";
@@ -90,6 +92,18 @@ export async function GET() {
     action: demoDataOff
       ? "Geen actie nodig."
       : "Zet in Vercel HELDER_SEED_DEMO op false.",
+  });
+
+  items.push({
+    key: "mollie",
+    label: "Betalen via Mollie",
+    ok: mollieConfigured,
+    detail: mollieConfigured
+      ? "Mollie is ingesteld voor pakketactivatie en abonnementen."
+      : "Mollie ontbreekt nog. Ondernemers kunnen hun pakket dan niet activeren.",
+    action: mollieConfigured
+      ? "Geen actie nodig. Test straks één betaling in Mollie-testmodus."
+      : "Vul in Vercel MOLLIE_API_KEY in en redeploy de website.",
   });
 
   items.push({
