@@ -60,6 +60,15 @@ function isSubscriptionStatus(value: string): value is SubscriptionStatus {
   return value === "trialing" || value === "active" || value === "past_due" || value === "canceled";
 }
 
+function mergeUserBilling(currentUser: User, billing: BillingStatusOverview): User {
+  return {
+    ...currentUser,
+    planType: billing.planType,
+    subscriptionStatus: isSubscriptionStatus(billing.subscriptionStatus) ? billing.subscriptionStatus : currentUser.subscriptionStatus,
+    trialEndsAt: billing.trialEndsAt,
+  };
+}
+
 function isDgaCompany(settings: CompanySettings | null) {
   return settings?.companyType === "bv_dga";
 }
@@ -103,6 +112,18 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 
 function StatusBadge({ status }: { status: InvoiceStatus }) {
   return <span className={`status status-${status.toLowerCase()}`}><span />{status}</span>;
+}
+
+async function readJsonResponse<T>(response: Response, fallbackError: string) {
+  const text = await response.text();
+  if (!text.trim()) {
+    return { data: {} as T, parseError: response.ok ? "" : fallbackError };
+  }
+  try {
+    return { data: JSON.parse(text) as T, parseError: "" };
+  } catch {
+    return { data: {} as T, parseError: fallbackError };
+  }
 }
 
 export function AdministrationApp() {
@@ -162,12 +183,7 @@ export function AdministrationApp() {
     function updateBillingUser(event: Event) {
       const billing = (event as CustomEvent<BillingStatusOverview>).detail;
       if (!billing) return;
-      setUser((currentUser) => currentUser ? {
-        ...currentUser,
-        planType: billing.planType,
-        subscriptionStatus: isSubscriptionStatus(billing.subscriptionStatus) ? billing.subscriptionStatus : currentUser.subscriptionStatus,
-        trialEndsAt: billing.trialEndsAt,
-      } : currentUser);
+      setUser((currentUser) => currentUser ? mergeUserBilling(currentUser, billing) : currentUser);
     }
 
     window.addEventListener("helder-billing-updated", updateBillingUser);
@@ -181,20 +197,21 @@ export function AdministrationApp() {
       const { user: sessionUser } = await session.json() as { user: User };
       let activeUser = sessionUser;
       if (new URLSearchParams(window.location.search).get("betaling") === "terug") {
+        let paymentMessage = "Betaling ontvangen. Helder controleert je pakketstatus nog.";
         try {
-          const billingResponse = await fetch("/api/billing/status", { method: "POST" });
-          const billingData = await billingResponse.json() as { billing?: BillingStatusOverview; message?: string; error?: string };
-          if (billingResponse.ok && billingData.billing) {
-            activeUser = {
-              ...activeUser,
-              planType: billingData.billing.planType,
-              subscriptionStatus: isSubscriptionStatus(billingData.billing.subscriptionStatus) ? billingData.billing.subscriptionStatus : activeUser.subscriptionStatus,
-              trialEndsAt: billingData.billing.trialEndsAt,
-            };
-            showToast(billingData.message ?? "Betaling gecontroleerd. Je pakketstatus is bijgewerkt.");
-          } else {
-            showToast(billingData.error ?? "Betaling ontvangen. Helder controleert je pakketstatus nog.");
+          for (let attempt = 0; attempt < 4; attempt += 1) {
+            const billingResponse = await fetch("/api/billing/status", { method: "POST" });
+            const billingData = await billingResponse.json() as { billing?: BillingStatusOverview; message?: string; error?: string };
+            if (billingResponse.ok && billingData.billing) {
+              activeUser = mergeUserBilling(activeUser, billingData.billing);
+              paymentMessage = billingData.message ?? "Betaling gecontroleerd. Je pakketstatus is bijgewerkt.";
+              if (billingData.billing.subscriptionStatus === "active") break;
+            } else {
+              paymentMessage = billingData.error ?? paymentMessage;
+            }
+            if (attempt < 3) await new Promise((resolve) => window.setTimeout(resolve, 1200));
           }
+          showToast(paymentMessage);
         } catch {
           showToast("Betaling ontvangen. Helder controleert je pakketstatus nog.");
         } finally {
@@ -328,8 +345,8 @@ export function AdministrationApp() {
 
   async function saveInvoice(draft: InvoiceDraft) {
     const response = await fetch("/api/invoices", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) });
-    const data = await response.json() as { invoice?: Invoice; error?: string };
-    if (!response.ok || !data.invoice) throw new Error(data.error ?? "De factuur kon niet worden opgeslagen.");
+    const { data, parseError } = await readJsonResponse<{ invoice?: Invoice; error?: string }>(response, "De factuur kon niet worden opgeslagen. Probeer het opnieuw of controleer Supabase.");
+    if (!response.ok || !data.invoice) throw new Error(data.error ?? (parseError || "De factuur kon niet worden opgeslagen."));
     setInvoices((current) => [data.invoice!, ...current]);
     setCreating(false);
     setView("invoices");
@@ -338,8 +355,8 @@ export function AdministrationApp() {
 
   async function saveEditedInvoice(invoiceId: string, draft: InvoiceDraft) {
     const response = await fetch(`/api/invoices/${invoiceId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) });
-    const data = await response.json() as { invoice?: InvoiceDetailData; error?: string };
-    if (!response.ok || !data.invoice) throw new Error(data.error ?? "De factuur kon niet worden bijgewerkt.");
+    const { data, parseError } = await readJsonResponse<{ invoice?: InvoiceDetailData; error?: string }>(response, "De factuur kon niet worden bijgewerkt. Probeer het opnieuw of controleer Supabase.");
+    if (!response.ok || !data.invoice) throw new Error(data.error ?? (parseError || "De factuur kon niet worden bijgewerkt."));
     await loadAdministration();
     setEditingInvoice(null);
     setSelectedInvoiceId(invoiceId);
@@ -1058,6 +1075,7 @@ function BillingStatusCard() {
       const data = await response.json() as { billing?: BillingStatusOverview; message?: string; error?: string };
       if (!response.ok || !data.billing) throw new Error(data.error ?? "Abonnementsstatus kon niet worden geladen.");
       setBilling(data.billing);
+      window.dispatchEvent(new CustomEvent("helder-billing-updated", { detail: data.billing }));
       if (data.message) setMessage(data.message);
       return data.billing;
     } catch (caught) {
@@ -1080,8 +1098,7 @@ function BillingStatusCard() {
       });
       const data = await response.json() as { message?: string; error?: string };
       if (!response.ok) throw new Error(data.error ?? "Pakket wijzigen is niet gelukt.");
-      const updatedBilling = await loadBilling("GET");
-      if (updatedBilling) window.dispatchEvent(new CustomEvent("helder-billing-updated", { detail: updatedBilling }));
+      await loadBilling("GET");
       setMessage(data.message ?? "Pakket gewijzigd.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Pakket wijzigen is niet gelukt.");

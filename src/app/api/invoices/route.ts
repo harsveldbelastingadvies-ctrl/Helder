@@ -82,7 +82,7 @@ export async function GET() {
   return NextResponse.json({ invoices });
 }
 
-export async function POST(request: Request) {
+async function createInvoice(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
   const body = await request.json() as { customerId?: string; issueDate?: string; dueDate?: string; lines?: InvoiceLine[]; invoiceFooter?: string };
@@ -145,4 +145,14 @@ export async function POST(request: Request) {
     id, customer: customer.name, date: formatDate(body.issueDate), due: formatDate(body.dueDate),
     issueDate: body.issueDate, dueDate: body.dueDate, totalCents: totals.totalCents, status: "Concept",
   } }, { status: 201 });
+}
+
+export async function POST(request: Request) {
+  try {
+    return await createInvoice(request);
+  } catch (caught) {
+    return NextResponse.json({
+      error: caught instanceof Error ? caught.message : "De factuur kon niet worden opgeslagen.",
+    }, { status: 500 });
+  }
 }
