@@ -24,6 +24,8 @@ create table if not exists users (
   trial_ends_at timestamptz,
   mollie_customer_id text,
   mollie_last_payment_id text,
+  mollie_subscription_id text,
+  subscription_activated_at timestamptz,
   email_verified_at timestamptz,
   email_verification_token_hash text,
   email_verification_expires_at bigint,
@@ -131,4 +133,6 @@ alter table users add column if not exists trial_started_at timestamptz;
 alter table users add column if not exists trial_ends_at timestamptz;
 alter table users add column if not exists mollie_customer_id text;
 alter table users add column if not exists mollie_last_payment_id text;
+alter table users add column if not exists mollie_subscription_id text;
+alter table users add column if not exists subscription_activated_at timestamptz;
 alter table invoices add column if not exists invoice_footer text not null default 'Bedankt voor de fijne samenwerking.';

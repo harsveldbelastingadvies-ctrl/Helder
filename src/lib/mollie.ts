@@ -7,12 +7,19 @@ type MollieCustomer = {
 export type MolliePayment = {
   id: string;
   status: string;
+  customerId?: string;
+  subscriptionId?: string;
   metadata?: Record<string, unknown> | null;
   _links?: {
     checkout?: {
       href?: string;
     };
   };
+};
+
+type MollieSubscription = {
+  id: string;
+  status: string;
 };
 
 type MollieRequestOptions = {
@@ -101,4 +108,26 @@ export async function createMollieFirstPayment(input: {
     status: payment.status,
     checkoutUrl,
   };
+}
+
+export async function createMollieSubscription(input: {
+  customerId: string;
+  amountCents: number;
+  description: string;
+  webhookUrl: string;
+  startDate: string;
+}) {
+  return await mollieRequest<MollieSubscription>(`/customers/${encodeURIComponent(input.customerId)}/subscriptions`, {
+    method: "POST",
+    body: {
+      amount: {
+        currency: "EUR",
+        value: (input.amountCents / 100).toFixed(2),
+      },
+      interval: "1 month",
+      startDate: input.startDate,
+      description: input.description,
+      webhookUrl: input.webhookUrl,
+    },
+  });
 }
