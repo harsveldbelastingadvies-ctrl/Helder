@@ -11,11 +11,11 @@ const privacySections = [
   },
   {
     title: "Wie kan erbij?",
-    body: "In deze bouwversie zijn gegevens gekoppeld aan het account waarmee je bent ingelogd. De gegevens zijn bedoeld voor de ondernemer zelf en worden niet zichtbaar gemaakt voor andere gebruikers.",
+    body: "Gegevens zijn gekoppeld aan het account waarmee je bent ingelogd. De administratie is bedoeld voor de ondernemer zelf en wordt niet zichtbaar gemaakt voor andere gebruikers.",
   },
   {
-    title: "Delen we gegevens met anderen?",
-    body: "In deze lokale versie delen we geen gegevens met externe partijen. Als Helder later online wordt aangeboden, moet per externe dienst duidelijk worden vastgelegd welke gegevens worden verwerkt en waarom.",
+    title: "Welke diensten helpen Helder draaien?",
+    body: "Voor online gebruik kan Helder diensten gebruiken zoals Vercel voor hosting, Supabase voor database en bonnenopslag, Resend voor e-mail en Mollie voor betalingen. Deze diensten verwerken alleen gegevens voor het doel waarvoor ze nodig zijn.",
   },
   {
     title: "Wat kun je zelf regelen?",
@@ -23,7 +23,15 @@ const privacySections = [
   },
   {
     title: "Hoe lang bewaren we gegevens?",
-    body: "In deze bouwversie blijven gegevens bewaard zolang ze in de lokale administratie staan. Later voegen we duidelijke bewaartermijnen en verwijdermogelijkheden toe voor een live platform.",
+    body: "Administratiegegevens worden bewaard zolang het account en de administratie worden gebruikt, tenzij er een wettelijke bewaarplicht of een duidelijke verwijderafspraak geldt.",
+  },
+  {
+    title: "Betalingen en abonnementen",
+    body: "Betalingen lopen via Mollie. Helder bewaart geen volledige betaalgegevens zoals bankinloggegevens. Wel bewaren we noodzakelijke betalingskenmerken, zodat het abonnement kan worden geactiveerd en gecontroleerd.",
+  },
+  {
+    title: "Vragen of correcties",
+    body: "Zie je gegevens die niet kloppen of wil je iets laten aanpassen? Neem dan contact op. We kijken dan samen welke gegevens aangepast, geëxporteerd of verwijderd kunnen worden.",
   },
 ];
 
@@ -42,8 +50,8 @@ export default function PrivacyPage() {
         <div className="privacy-notice">
           <strong>Belangrijk om te weten</strong>
           <span>
-            Dit is een duidelijke conceptversie voor tijdens de bouw. Voor een live platform
-            moet deze tekst nog juridisch worden gecontroleerd en aangevuld.
+            Dit is een duidelijke werkversie in gewone taal. Laat de definitieve juridische
+            privacyverklaring controleren voordat Helder breed aan ondernemers wordt aangeboden.
           </span>
         </div>
 
@@ -58,7 +66,7 @@ export default function PrivacyPage() {
 
         <footer className="privacy-footer">
           <p>
-            Laatst bijgewerkt: 25 juni 2026. Deze pagina hoort bij de lokale bouwversie van Helder.
+            Laatst bijgewerkt: 29 juni 2026. Deze pagina hoort bij Helder van R. Harsveld Belastingadvies.
           </p>
         </footer>
       </section>
