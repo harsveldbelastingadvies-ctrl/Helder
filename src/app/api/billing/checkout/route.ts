@@ -78,10 +78,9 @@ export async function POST(request: Request) {
 
   const plan = getPlan(billingUser.plan_type ?? billingUser.planType ?? sessionUser.planType);
   const subscriptionStatus = billingUser.subscription_status ?? billingUser.subscriptionStatus ?? sessionUser.subscriptionStatus;
-  const mollieSubscriptionId = billingUser.mollie_subscription_id ?? billingUser.mollieSubscriptionId;
   const mollieLastPaymentId = billingUser.mollie_last_payment_id ?? billingUser.mollieLastPaymentId;
 
-  if (subscriptionStatus === "active" && mollieSubscriptionId) {
+  if (subscriptionStatus === "active") {
     return NextResponse.json({ error: "Je pakket is al actief. Je hoeft niet opnieuw te betalen." }, { status: 409 });
   }
 
