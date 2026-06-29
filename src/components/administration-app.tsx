@@ -161,6 +161,10 @@ export function AdministrationApp() {
       const welcomeKey = `helder-welcome-${activeUser.id}`;
       setUser(activeUser);
       if (!window.sessionStorage.getItem(welcomeKey)) setWelcomeOpen(true);
+      if (new URLSearchParams(window.location.search).get("betaling") === "terug") {
+        showToast("Betaling ontvangen. Helder verwerkt je pakketstatus automatisch.");
+        window.history.replaceState({}, "", window.location.pathname);
+      }
       await loadAdministration();
     } finally {
       setLoading(false);
@@ -556,7 +560,7 @@ function LoginScreen({ onLogin, onRegistered }: { onLogin: (email: string, passw
 
 function BillingBlockedScreen({ user, onLogout }: { user: User; onLogout: () => Promise<void> }) {
   const plan = getPlan(user.planType);
-  return <main className="auth-shell billing-shell"><section className="billing-card"><div className="auth-brand"><span className="brand-mark">h</span><span>helder</span></div><p className="eyebrow">PROEFPERIODE AFGELOPEN</p><h1>Activeer je pakket om Helder verder te gebruiken.</h1><p>De proefperiode voor <strong>{user.companyName}</strong> is afgelopen. Om te voorkomen dat Helder kosteloos doorloopt, is de administratie tijdelijk vergrendeld totdat het gekozen pakket actief is.</p><div className="billing-plan-summary"><span>Gekozen pakket</span><strong>{plan.name}</strong><em>{plan.priceLabel}</em></div><div className="billing-actions"><BillingCheckoutButton label="Pakket activeren via Mollie" /><button className="secondary-button" onClick={() => void onLogout()}>Uitloggen</button></div><small>Na betaling stuurt Mollie je terug naar Helder. In de volgende stap verwerkt de webhook de betaling automatisch naar actief.</small></section></main>;
+  return <main className="auth-shell billing-shell"><section className="billing-card"><div className="auth-brand"><span className="brand-mark">h</span><span>helder</span></div><p className="eyebrow">PROEFPERIODE AFGELOPEN</p><h1>Activeer je pakket om Helder verder te gebruiken.</h1><p>De proefperiode voor <strong>{user.companyName}</strong> is afgelopen. Om te voorkomen dat Helder kosteloos doorloopt, is de administratie tijdelijk vergrendeld totdat het gekozen pakket actief is.</p><div className="billing-plan-summary"><span>Gekozen pakket</span><strong>{plan.name}</strong><em>{plan.priceLabel}</em></div><div className="billing-actions"><BillingCheckoutButton label="Pakket activeren via Mollie" /><button className="secondary-button" onClick={() => void onLogout()}>Uitloggen</button></div><small>Na betaling stuurt Mollie je terug naar Helder. Het kan enkele seconden duren voordat Mollie de betaalstatus automatisch heeft doorgegeven.</small></section></main>;
 }
 
 function BillingCheckoutButton({ label = "Pakket activeren" }: { label?: string }) {

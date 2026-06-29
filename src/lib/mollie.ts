@@ -4,9 +4,10 @@ type MollieCustomer = {
   id: string;
 };
 
-type MolliePayment = {
+export type MolliePayment = {
   id: string;
   status: string;
+  metadata?: Record<string, unknown> | null;
   _links?: {
     checkout?: {
       href?: string;
@@ -21,6 +22,10 @@ type MollieRequestOptions = {
 
 export function getMollieApiKey() {
   return process.env.MOLLIE_API_KEY?.trim() || null;
+}
+
+export async function getMolliePayment(paymentId: string) {
+  return await mollieRequest<MolliePayment>(`/payments/${encodeURIComponent(paymentId)}`);
 }
 
 export function getPublicAppUrl(request: Request) {
