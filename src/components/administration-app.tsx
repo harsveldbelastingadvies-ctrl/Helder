@@ -56,6 +56,10 @@ function companyTypeLabel(type?: CompanyType) {
   return "Eenmanszaak / zzp";
 }
 
+function isSubscriptionStatus(value: string): value is SubscriptionStatus {
+  return value === "trialing" || value === "active" || value === "past_due" || value === "canceled";
+}
+
 function isDgaCompany(settings: CompanySettings | null) {
   return settings?.companyType === "bv_dga";
 }
@@ -158,14 +162,32 @@ export function AdministrationApp() {
     try {
       const session = await fetch("/api/auth/session");
       if (!session.ok) return;
-      const { user: activeUser } = await session.json() as { user: User };
+      const { user: sessionUser } = await session.json() as { user: User };
+      let activeUser = sessionUser;
+      if (new URLSearchParams(window.location.search).get("betaling") === "terug") {
+        try {
+          const billingResponse = await fetch("/api/billing/status", { method: "POST" });
+          const billingData = await billingResponse.json() as { billing?: BillingStatusOverview; message?: string; error?: string };
+          if (billingResponse.ok && billingData.billing) {
+            activeUser = {
+              ...activeUser,
+              planType: billingData.billing.planType,
+              subscriptionStatus: isSubscriptionStatus(billingData.billing.subscriptionStatus) ? billingData.billing.subscriptionStatus : activeUser.subscriptionStatus,
+              trialEndsAt: billingData.billing.trialEndsAt,
+            };
+            showToast(billingData.message ?? "Betaling gecontroleerd. Je pakketstatus is bijgewerkt.");
+          } else {
+            showToast(billingData.error ?? "Betaling ontvangen. Helder controleert je pakketstatus nog.");
+          }
+        } catch {
+          showToast("Betaling ontvangen. Helder controleert je pakketstatus nog.");
+        } finally {
+          window.history.replaceState({}, "", window.location.pathname);
+        }
+      }
       const welcomeKey = `helder-welcome-${activeUser.id}`;
       setUser(activeUser);
       if (!window.sessionStorage.getItem(welcomeKey)) setWelcomeOpen(true);
-      if (new URLSearchParams(window.location.search).get("betaling") === "terug") {
-        showToast("Betaling ontvangen. Helder verwerkt je pakketstatus automatisch.");
-        window.history.replaceState({}, "", window.location.pathname);
-      }
       await loadAdministration();
     } finally {
       setLoading(false);
