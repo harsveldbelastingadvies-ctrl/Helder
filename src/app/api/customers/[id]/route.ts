@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { supabaseSingle, supabaseUpdate, usesSupabaseStorage } from "@/lib/supabase";
+import { supabaseDelete, supabaseSingle, supabaseUpdate, usesSupabaseStorage } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -24,6 +24,20 @@ async function getExistingCustomer(id: string, userId: string): Promise<Existing
   const row = db.prepare("SELECT id, revenue_cents AS revenueCents, color FROM customers WHERE id = ? AND user_id = ?")
     .get(id, userId) as ExistingCustomer | undefined;
   return row ?? null;
+}
+
+async function countCustomerInvoices(id: string, userId: string) {
+  if (usesSupabaseStorage()) {
+    const row = await supabaseSingle<{ id: string }>("invoices", {
+      select: "id",
+      filters: { customer_id: id, user_id: userId },
+    });
+    return row ? 1 : 0;
+  }
+  const { db } = await import("@/lib/db");
+  const row = db.prepare("SELECT COUNT(*) AS count FROM invoices WHERE customer_id = ? AND user_id = ?")
+    .get(id, userId) as { count: number };
+  return row.count;
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -67,4 +81,36 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       .run(customer.name, customer.contact, customer.email, customer.street, customer.postalCode, customer.city, customer.initials, id, user.id);
   }
   return NextResponse.json({ customer });
+}
+
+export async function DELETE(_request: Request, context: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
+  const { id } = await context.params;
+
+  const existing = await getExistingCustomer(id, user.id);
+  if (!existing) return NextResponse.json({ error: "Deze klant bestaat niet." }, { status: 404 });
+
+  const invoiceCount = await countCustomerInvoices(id, user.id);
+  if (invoiceCount > 0) {
+    return NextResponse.json({
+      error: "Deze klant heeft nog facturen. Daarom kan Rekenrust de klant niet volledig verwijderen zonder je administratie te beschadigen. Verwijder eerst eventuele conceptfacturen of bewaar de klant voor je administratie.",
+    }, { status: 409 });
+  }
+
+  if (usesSupabaseStorage()) {
+    await supabaseDelete("customer_notes", { customer_id: id, user_id: user.id });
+    await supabaseDelete("customer_tasks", { customer_id: id, user_id: user.id });
+    await supabaseDelete("customers", { id, user_id: user.id });
+  } else {
+    const { db } = await import("@/lib/db");
+    const transaction = db.transaction(() => {
+      db.prepare("DELETE FROM customer_notes WHERE customer_id = ? AND user_id = ?").run(id, user.id);
+      db.prepare("DELETE FROM customer_tasks WHERE customer_id = ? AND user_id = ?").run(id, user.id);
+      db.prepare("DELETE FROM customers WHERE id = ? AND user_id = ?").run(id, user.id);
+    });
+    transaction();
+  }
+
+  return NextResponse.json({ ok: true });
 }
