@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 
 type SettingsInput = {
   companyName?: string;
+  companyType?: string;
   owner?: string;
   email?: string;
   street?: string;
@@ -23,6 +24,7 @@ type SettingsInput = {
 
 type SupabaseSettingsRow = {
   company_name: string;
+  company_type?: string;
   name: string;
   email: string;
   street: string;
@@ -40,6 +42,7 @@ type SupabaseSettingsRow = {
 function toSettings(row: SupabaseSettingsRow) {
   return {
     companyName: row.company_name,
+    companyType: row.company_type ?? "sole_proprietor",
     owner: row.name,
     email: row.email,
     street: row.street,
@@ -57,14 +60,24 @@ function toSettings(row: SupabaseSettingsRow) {
 
 async function getSettings(userId: string) {
   if (usesSupabaseStorage()) {
-    const row = await supabaseSingle<SupabaseSettingsRow>("users", {
-      select: "company_name,name,email,street,postal_code,city,kvk_number,vat_number,iban,invoice_payment_term,default_vat_rate,invoice_footer,invoice_logo",
-      filters: { id: userId },
-    });
+    let row: SupabaseSettingsRow | null;
+    try {
+      row = await supabaseSingle<SupabaseSettingsRow>("users", {
+        select: "company_name,company_type,name,email,street,postal_code,city,kvk_number,vat_number,iban,invoice_payment_term,default_vat_rate,invoice_footer,invoice_logo",
+        filters: { id: userId },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (!message.includes("company_type")) throw error;
+      row = await supabaseSingle<SupabaseSettingsRow>("users", {
+        select: "company_name,name,email,street,postal_code,city,kvk_number,vat_number,iban,invoice_payment_term,default_vat_rate,invoice_footer,invoice_logo",
+        filters: { id: userId },
+      });
+    }
     return row ? toSettings(row) : null;
   }
   const { db } = await import("@/lib/db");
-  return db.prepare(`SELECT company_name AS companyName, name AS owner, email, street,
+  return db.prepare(`SELECT company_name AS companyName, company_type AS companyType, name AS owner, email, street,
     postal_code AS postalCode, city, kvk_number AS kvkNumber, vat_number AS vatNumber, iban,
     invoice_payment_term AS invoicePaymentTerm, default_vat_rate AS defaultVatRate, invoice_footer AS invoiceFooter,
     invoice_logo AS invoiceLogo
@@ -89,10 +102,12 @@ export async function PATCH(request: Request) {
   if (!/^NL\d{2}[A-Z]{4}\d{10}$/i.test(input.iban!.replace(/\s/g, ""))) return NextResponse.json({ error: "Controleer het Nederlandse IBAN." }, { status: 400 });
   const invoicePaymentTerm = Number(input.invoicePaymentTerm ?? 14);
   const defaultVatRate = Number(input.defaultVatRate ?? 21);
+  const companyType = input.companyType ?? "sole_proprietor";
   const invoiceFooter = input.invoiceFooter?.trim() || "Bedankt voor de fijne samenwerking.";
   const invoiceLogo = input.invoiceLogo?.trim() ?? "";
   if (![7, 14, 30, 60].includes(invoicePaymentTerm)) return NextResponse.json({ error: "Kies een betaaltermijn van 7, 14, 30 of 60 dagen." }, { status: 400 });
   if (![0, 9, 21].includes(defaultVatRate)) return NextResponse.json({ error: "Kies een standaard btw-tarief van 0%, 9% of 21%." }, { status: 400 });
+  if (!["sole_proprietor", "bv_dga", "other"].includes(companyType)) return NextResponse.json({ error: "Kies een geldig soort onderneming." }, { status: 400 });
   if (invoiceFooter.length > 240) return NextResponse.json({ error: "Houd de standaard factuurtekst korter dan 240 tekens." }, { status: 400 });
   if (invoiceLogo && !/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(invoiceLogo)) return NextResponse.json({ error: "Kies een png- of jpg-logo." }, { status: 400 });
   if (invoiceLogo.length > 700_000) return NextResponse.json({ error: "Het logo is te groot. Kies een kleiner png- of jpg-bestand." }, { status: 400 });
@@ -105,6 +120,7 @@ export async function PATCH(request: Request) {
 
   const patch = {
     company_name: input.companyName!.trim(),
+    company_type: companyType,
     name: input.owner!.trim(),
     email,
     street: input.street!.trim(),
@@ -125,12 +141,16 @@ export async function PATCH(request: Request) {
       if (!rows.length) return NextResponse.json({ error: "De bedrijfsgegevens konden niet worden opgeslagen." }, { status: 404 });
     } else {
       const { db } = await import("@/lib/db");
-      db.prepare(`UPDATE users SET company_name = ?, name = ?, email = ?, street = ?, postal_code = ?, city = ?,
+      db.prepare(`UPDATE users SET company_name = ?, company_type = ?, name = ?, email = ?, street = ?, postal_code = ?, city = ?,
         kvk_number = ?, vat_number = ?, iban = ?, invoice_payment_term = ?, default_vat_rate = ?, invoice_footer = ?, invoice_logo = ? WHERE id = ?`)
-        .run(patch.company_name, patch.name, patch.email, patch.street, patch.postal_code, patch.city,
+        .run(patch.company_name, patch.company_type, patch.name, patch.email, patch.street, patch.postal_code, patch.city,
           patch.kvk_number, patch.vat_number, patch.iban, patch.invoice_payment_term, patch.default_vat_rate, patch.invoice_footer, patch.invoice_logo, user.id);
     }
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("company_type")) {
+      return NextResponse.json({ error: "Supabase mist nog de nieuwe DGA-kolom. Voer eerst de korte SQL-update uit in Supabase." }, { status: 400 });
+    }
     return NextResponse.json({ error: "De bedrijfsgegevens konden niet worden opgeslagen. Controleer vooral het e-mailadres." }, { status: 400 });
   }
   return NextResponse.json({ settings: await getSettings(user.id) });

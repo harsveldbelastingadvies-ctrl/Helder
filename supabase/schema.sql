@@ -7,6 +7,7 @@ create table if not exists users (
   email text not null unique,
   password_hash text not null,
   company_name text not null,
+  company_type text not null default 'sole_proprietor' check (company_type in ('sole_proprietor', 'bv_dga', 'other')),
   street text not null default '',
   postal_code text not null default '',
   city text not null default '',
@@ -117,4 +118,5 @@ values ('helder', 'helder', false)
 on conflict (id) do nothing;
 
 alter table users add column if not exists invoice_logo text not null default '';
+alter table users add column if not exists company_type text not null default 'sole_proprietor';
 alter table invoices add column if not exists invoice_footer text not null default 'Bedankt voor de fijne samenwerking.';

@@ -23,6 +23,7 @@ function createDatabase() {
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       company_name TEXT NOT NULL,
+      company_type TEXT NOT NULL DEFAULT 'sole_proprietor',
       street TEXT NOT NULL DEFAULT '',
       postal_code TEXT NOT NULL DEFAULT '',
       city TEXT NOT NULL DEFAULT '',
@@ -155,6 +156,7 @@ function ensureUserColumns(database: DatabaseInstance) {
   const existing = new Set((database.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>).map((column) => column.name));
   const columns: Record<string, string> = {
     street: "TEXT NOT NULL DEFAULT ''",
+    company_type: "TEXT NOT NULL DEFAULT 'sole_proprietor'",
     postal_code: "TEXT NOT NULL DEFAULT ''",
     city: "TEXT NOT NULL DEFAULT ''",
     kvk_number: "TEXT NOT NULL DEFAULT ''",

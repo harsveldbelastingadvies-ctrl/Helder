@@ -9,6 +9,7 @@ type CompanyRow = {
   name: string;
   email: string;
   companyName: string;
+  companyType: string;
   street: string;
   postalCode: string;
   city: string;
@@ -63,6 +64,11 @@ function validDepreciationYears(value: unknown) {
 function validInvoiceStatus(value: unknown) {
   const status = text(value);
   return ["Betaald", "Openstaand", "Concept", "Te laat"].includes(status) ? status : "Concept";
+}
+
+function validCompanyType(value: unknown) {
+  const type = text(value, "sole_proprietor");
+  return ["sole_proprietor", "bv_dga", "other"].includes(type) ? type : "sole_proprietor";
 }
 
 function publicExpense(expense: Record<string, unknown>) {
@@ -129,7 +135,7 @@ async function prepareReceiptRestores(userId: string, backup: BackupPayload) {
 
 async function getLocalAdministrationBackup(userId: string) {
   const { db } = await import("./db");
-  const company = db.prepare(`SELECT id, name, email, company_name AS companyName, street,
+  const company = db.prepare(`SELECT id, name, email, company_name AS companyName, company_type AS companyType, street,
     postal_code AS postalCode, city, kvk_number AS kvkNumber, vat_number AS vatNumber,
     iban, invoice_payment_term AS invoicePaymentTerm, default_vat_rate AS defaultVatRate,
     invoice_footer AS invoiceFooter, invoice_logo AS invoiceLogo, created_at AS createdAt FROM users WHERE id = ?`).get(userId) as CompanyRow;
@@ -168,11 +174,11 @@ async function getLocalAdministrationBackup(userId: string) {
 async function getSupabaseAdministrationBackup(userId: string) {
   const [company, customers, invoices, expenses, notes, tasks] = await Promise.all([
     supabaseSingle<{
-      id: string; name: string; email: string; company_name: string; street: string; postal_code: string; city: string;
+      id: string; name: string; email: string; company_name: string; company_type: string; street: string; postal_code: string; city: string;
       kvk_number: string; vat_number: string; iban: string; invoice_payment_term: number; default_vat_rate: number;
       invoice_footer: string; invoice_logo: string; created_at: string;
     }>("users", {
-      select: "id,name,email,company_name,street,postal_code,city,kvk_number,vat_number,iban,invoice_payment_term,default_vat_rate,invoice_footer,invoice_logo,created_at",
+      select: "id,name,email,company_name,company_type,street,postal_code,city,kvk_number,vat_number,iban,invoice_payment_term,default_vat_rate,invoice_footer,invoice_logo,created_at",
       filters: { id: userId },
     }),
     supabaseSelect<{
@@ -228,6 +234,7 @@ async function getSupabaseAdministrationBackup(userId: string) {
       name: company.name,
       email: company.email,
       companyName: company.company_name,
+      companyType: company.company_type,
       street: company.street,
       postalCode: company.postal_code,
       city: company.city,
@@ -382,13 +389,14 @@ async function restoreLocalAdministrationBackup(userId: string, backup: BackupPa
 
     const company = backup.company;
     if (company) {
-      db.prepare(`UPDATE users SET name = ?, email = ?, company_name = ?, street = ?, postal_code = ?, city = ?,
+      db.prepare(`UPDATE users SET name = ?, email = ?, company_name = ?, company_type = ?, street = ?, postal_code = ?, city = ?,
         kvk_number = ?, vat_number = ?, iban = ?, invoice_payment_term = ?, default_vat_rate = ?, invoice_footer = ?, invoice_logo = ?
         WHERE id = ?`)
         .run(
           text(company.name, "Ondernemer"),
           text(company.email, "demo@helder.nl").toLowerCase(),
           text(company.companyName, "Mijn onderneming"),
+          validCompanyType(company.companyType),
           text(company.street),
           text(company.postalCode).toUpperCase(),
           text(company.city),
@@ -490,6 +498,7 @@ async function restoreSupabaseAdministrationBackup(userId: string, backup: Backu
       name: text(company.name, "Ondernemer"),
       email: text(company.email, "demo@helder.nl").toLowerCase(),
       company_name: text(company.companyName, "Mijn onderneming"),
+      company_type: validCompanyType(company.companyType),
       street: text(company.street),
       postal_code: text(company.postalCode).toUpperCase(),
       city: text(company.city),
